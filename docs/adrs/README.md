@@ -48,6 +48,6 @@ Status: Accepted
 
 Context: This project is meant to be easy for technical reviewers to inspect and run. Full backend infrastructure would add a lot of configuration before the core product and architecture are clear, while the frontend can be statically hosted.
 
-Decision: Use Docker Compose for the reviewable runtime, development servers in the local frontend/backend containers, startup table creation for the initial schema, and Cloudflare Pages static export for frontend hosting.
+Decision: Use Docker Compose for the reviewable runtime, Alembic for the backend schema, a startup table-creation fallback for local development, and Cloudflare Pages static export for frontend hosting.
 
-Consequences: Reviewers can run the app with a small local setup, and the frontend has a simple static deployment path. Production backend concerns remain explicit follow-up work: migrations, auth, tighter CORS, managed secrets, infrastructure provisioning, and production-grade process management.
+Consequences: Reviewers can run the app with a small local setup, and the frontend has a simple static deployment path. Production backend concerns remain explicit follow-up work: auth, tighter CORS, managed secrets, infrastructure provisioning, and production-grade process management.

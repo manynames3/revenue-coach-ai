@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
     aws_s3_bucket: str = "revenuecoach-audio"
+    max_audio_upload_bytes: int = 100 * 1024 * 1024
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

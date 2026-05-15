@@ -18,7 +18,16 @@ export interface Call {
   transcript: string | null;
   audio_s3_key: string | null;
   transcription_job_id: string | null;
+  status: "created" | "transcribing" | "transcribed" | "analyzing" | "analyzed" | "failed";
+  failure_reason: string | null;
+  transcription_retry_count: number;
+  analysis_retry_count: number;
+  transcription_started_at: string | null;
+  transcribed_at: string | null;
+  analysis_started_at: string | null;
+  analyzed_at: string | null;
   created_at: string;
+  updated_at: string | null;
   analysis?: Analysis;
 }
 
