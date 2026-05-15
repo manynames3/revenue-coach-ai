@@ -73,3 +73,21 @@ docker compose up --build
 - [x] **Phase 3:** Full Audio Pipeline (AWS S3 + Transcribe)
 - [ ] **Phase 4:** Production Deployment (Terraform + ECS Fargate)
 - [ ] **Phase 5:** Rep-specific analytics & historical trend lines
+
+---
+
+## ☁️ Cloudflare Pages Deployment (CI/CD)
+
+The frontend is configured for high-performance static hosting on **Cloudflare Pages**.
+
+### **Setup Instructions:**
+1.  **Dashboard:** Go to the [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**.
+2.  **Repository:** Select this GitHub repository.
+3.  **Build Settings:**
+    *   **Framework preset:** `Next.js (Static HTML Export)`
+    *   **Build command:** `npm run build`
+    *   **Build output directory:** `frontend/out`
+    *   **Root directory:** `frontend`
+4.  **Environment Variables:**
+    *   Add `NEXT_PUBLIC_API_URL` and point it to your deployed AWS backend.
+5.  **Deploy:** Click "Save and Deploy". Every push to `master` will now trigger an automatic global deployment.
