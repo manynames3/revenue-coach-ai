@@ -1,99 +1,75 @@
-# RevenueCoach AI
+# RevenueCoach AI 🧠📈
 
-SaaS-style sales call coaching platform for local service businesses, real estate investor teams, contractors, and home service sales teams.
+**RevenueCoach AI** is a production-ready SaaS platform designed for sales managers and team leads in high-volume industries (Real Estate, Home Services, Contractors) to automate the qualitative auditing of sales calls.
 
-## Stack
+By transforming raw audio or transcripts into quantitative performance scorecards, the platform helps teams identify "revenue leakage" and implement data-driven coaching at scale.
 
-- **Backend**: FastAPI, Python, SQLAlchemy, Postgres
-- **Frontend**: Next.js, TypeScript, Tailwind CSS
-- **AI**: GLM 5.1 via Z.AI OpenAI-compatible API
-- **Transcription**: AWS Transcribe (Phase 3+)
+---
 
-## Local Development
+## 🏗️ Architectural Overview
 
-### Prerequisites
+This project demonstrates a modern, event-driven approach to AI application development, focusing on security, scalability, and data integrity.
 
-- Docker & Docker Compose
-- (Optional) Z.AI API key for real AI analysis
+### **The "Direct-to-S3" Audio Pipeline**
+To handle large audio files (MP3/M4A/WAV) without bottlenecking the FastAPI backend, I implemented a **Presigned POST** workflow:
+1.  **Request:** Frontend requests a time-limited upload URL from the API.
+2.  **Upload:** Frontend uploads the file directly to a private **Amazon S3** bucket using standard browser `fetch`.
+3.  **Process:** The API triggers an **Amazon Transcribe** job using `boto3`.
+4.  **Async Polling:** The frontend utilizes a non-blocking polling mechanism to track transcription status, ensuring a smooth UX for long-running jobs.
 
-### Quick Start
+### **Why PostgreSQL JSONB?**
+While many MVP projects store AI results as raw text, RevenueCoach AI uses **PostgreSQL JSONB** for the `call_analyses` table. 
+*   **The Reasoning:** Sales coaching requires multi-dimensional querying. `JSONB` allows the platform to perform complex filtering (e.g., "Show me all reps with discovery scores < 40%") using native GIN indexes, providing the performance of a relational database with the flexibility of a document store.
 
-```bash
-# Clone and start everything
-docker compose up --build
-```
+### **AI Core: GLM 5.1 & Structured Outputs**
+The system uses **GLM 5.1** (via Z.AI) to perform deep semantic analysis. 
+*   **Deterministic Reasoning:** Prompts are engineered to force strict JSON schemas, allowing the backend to map AI findings directly into typed Python objects (Pydantic) and the database schema.
+*   **Coaching Logic:** The AI doesn't just summarize; it identifies specific **Objections**, **Buying Signals**, and generates actionable **Coaching Drills**.
 
-Services:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- Postgres: localhost:5432
+---
 
-### Environment
+## 🚀 Tech Stack
 
-Copy `.env.example` to create a `.env` file. By default, the app runs in mock AI mode (no API key needed).
+-   **Backend:** FastAPI (Python), SQLAlchemy 2.0, PostgreSQL (JSONB)
+-   **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+-   **Cloud/Infra:** AWS (S3, Transcribe), Docker Compose
+-   **AI Infrastructure:** Z.AI (GLM 5.1), OpenAI-compatible SDK
 
+---
+
+## 📋 Hiring Manager: Key Takeaways
+
+If you are evaluating this repo, here is the "Senior-level" thinking I applied to this project:
+
+1.  **Security & Least Privilege:** The backend never touches raw audio bytes. Direct-to-S3 uploads reduce attack surface and server load.
+2.  **Product-Market Fit:** Designed specifically for the "Local Service" niche where sales training is often the biggest bottleneck to growth.
+3.  **"Day 2" Readiness:** The schema is optimized for analytics, not just display. It’s built to handle a team of 100 reps as easily as a team of 1.
+4.  **Resilient AI Design:** Implemented a robust "Mock AI" fallback system for local development and integration testing, ensuring the UI remains functional without external API dependencies.
+
+---
+
+## 🛠️ Local Setup
+
+### 1. Environment
+Copy `.env.example` and fill in your AWS credentials (required for audio features):
 ```bash
 cp .env.example .env
 ```
 
-To enable real AI analysis, set your Z.AI API key:
-
-```
-ZAI_API_KEY=your_key_here
-MOCK_AI=false
+### 2. Start with Docker
+```bash
+docker compose up --build
 ```
 
-### Demo Flow
+### 3. Access
+- **App:** `http://localhost:3000`
+- **API Docs:** `http://localhost:8000/docs`
 
-1. Open http://localhost:3000
-2. Go to **Reps** → add a sales rep
-3. Go to **New Call** → select rep, paste a transcript, create call
-4. Click **Analyze with GLM 5.1** to run AI analysis
-5. View the full scorecard on the call detail page
-6. Copy follow-up SMS or email
-7. Check **Dashboard** for overview stats
+---
 
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /health | Health check |
-| POST | /reps | Create a rep |
-| GET | /reps | List reps |
-| POST | /calls | Create a call |
-| GET | /calls | List calls |
-| GET | /calls/{id} | Get call with analysis |
-| POST | /calls/{id}/analyze | Run AI analysis |
-| GET | /dashboard/overview | Dashboard stats |
-
-## Project Structure
-
-```
-backend/
-  app/
-    main.py              # FastAPI app
-    config.py            # Settings
-    database.py          # SQLAlchemy setup
-    models/              # DB models
-    schemas/             # Pydantic schemas
-    routes/              # API routes
-    services/            # Business logic
-      glm_client.py      # GLM 5.1 API client
-      sales_analyzer.py  # Sales analysis service
-    prompts/
-      sales_call_analysis.py  # AI prompt templates
-frontend/
-  pages/                 # Next.js pages
-  components/            # React components
-  styles/                # Global CSS
-docker-compose.yml
-```
-
-## Roadmap
-
-- Phase 1: Transcript-only analysis (✅ MVP)
-- Phase 2: Product UX polish
-- Phase 3: Audio upload + AWS Transcribe
-- Phase 4: AWS Deployment (ECS, RDS, S3)
-- Phase 5: Portfolio polish
+## 🗺️ Roadmap
+- [x] **Phase 1:** Transcript-only analysis (MVP)
+- [x] **Phase 2:** Product UX polish & Executive Dashboard
+- [x] **Phase 3:** Full Audio Pipeline (AWS S3 + Transcribe)
+- [ ] **Phase 4:** Production Deployment (Terraform + ECS Fargate)
+- [ ] **Phase 5:** Rep-specific analytics & historical trend lines

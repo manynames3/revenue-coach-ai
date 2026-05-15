@@ -18,6 +18,8 @@ class Call(Base):
     call_type: Mapped[str] = mapped_column(String, nullable=True)
     outcome: Mapped[str] = mapped_column(String, nullable=True)
     transcript: Mapped[str] = mapped_column(Text, nullable=True)
+    audio_s3_key: Mapped[str] = mapped_column(String, nullable=True)
+    transcription_job_id: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

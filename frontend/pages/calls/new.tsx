@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import type { Rep } from "../../types";
+import type { Rep, UploadUrlResponse } from "../../types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function NewCall() {
   const router = useRouter();
   const [reps, setReps] = useState<Rep[]>([]);
+  const [mode, setMode] = useState<"text" | "audio">("text");
+  const [file, setFile] = useState<File | null>(null);
+  
   const [form, setForm] = useState({
     rep_id: "",
     lead_name: "",
@@ -13,41 +18,78 @@ export default function NewCall() {
     outcome: "",
     transcript: "",
   });
-  const [creating, setCreating] = useState(false);
+  
+  const [status, setStatus] = useState<"idle" | "uploading" | "creating" | "transcribing" | "completed">("idle");
   const [callId, setCallId] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<string>("");
 
   useEffect(() => {
-    fetch("http://localhost:8000/reps")
+    fetch(`${API_URL}/reps`)
       .then((r) => r.json())
       .then(setReps);
   }, []);
 
-  const createCall = async () => {
-    setCreating(true);
-    const res = await fetch("http://localhost:8000/calls", {
+  const handleSubmit = async () => {
+    if (mode === "text") {
+      await createCallWithText();
+    } else {
+      await createCallWithAudio();
+    }
+  };
+
+  const createCallWithText = async () => {
+    setStatus("creating");
+    const res = await fetch(`${API_URL}/calls`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     const call = await res.json();
     setCallId(call.id);
-    setCreating(false);
+    setStatus("completed");
+    router.push(`/calls/${call.id}`);
   };
 
-  const analyzeCall = async () => {
-    if (!callId) return;
-    setAnalyzing(true);
-    try {
-      const res = await fetch(`http://localhost:8000/calls/${callId}/analyze`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      setAnalysis(data);
-    } finally {
-      setAnalyzing(false);
-    }
+  const createCallWithAudio = async () => {
+    if (!file) return;
+    
+    // 1. Get Presigned URL
+    setStatus("uploading");
+    const urlRes = await fetch(`${API_URL}/calls/upload-url?file_name=${encodeURIComponent(file.name)}&file_type=${encodeURIComponent(file.type)}`, {
+      method: "POST"
+    });
+    const presigned: UploadUrlResponse = await urlRes.json();
+
+    // 2. Upload to S3
+    const formData = new FormData();
+    Object.entries(presigned.fields).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    formData.append("file", file);
+
+    await fetch(presigned.url, {
+      method: "POST",
+      body: formData,
+    });
+
+    // 3. Create Call record
+    setStatus("creating");
+    const callRes = await fetch(`${API_URL}/calls`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, transcript: "" }), // Transcript will be filled later
+    });
+    const call = await callRes.json();
+    setCallId(call.id);
+
+    // 4. Start Transcription
+    setStatus("transcribing");
+    await fetch(`${API_URL}/calls/${call.id}/transcribe?s3_key=${encodeURIComponent(presigned.key)}`, {
+      method: "POST"
+    });
+
+    setStatus("completed");
+    router.push(`/calls/${call.id}`);
   };
 
   return (
@@ -56,6 +98,21 @@ export default function NewCall() {
 
       <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
         <div className="space-y-4">
+          <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
+            <button 
+              onClick={() => setMode("text")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${mode === "text" ? "bg-white shadow text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+            >
+              Text Transcript
+            </button>
+            <button 
+              onClick={() => setMode("audio")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${mode === "audio" ? "bg-white shadow text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+            >
+              Audio Upload
+            </button>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Sales Rep</label>
             <select
@@ -78,6 +135,7 @@ export default function NewCall() {
               className="w-full border rounded px-3 py-2"
               value={form.lead_name}
               onChange={(e) => setForm({ ...form, lead_name: e.target.value })}
+              placeholder="e.g. John Smith"
             />
           </div>
 
@@ -88,6 +146,7 @@ export default function NewCall() {
                 className="w-full border rounded px-3 py-2"
                 value={form.lead_source}
                 onChange={(e) => setForm({ ...form, lead_source: e.target.value })}
+                placeholder="Google, Referral..."
               />
             </div>
             <div>
@@ -96,6 +155,7 @@ export default function NewCall() {
                 className="w-full border rounded px-3 py-2"
                 value={form.call_type}
                 onChange={(e) => setForm({ ...form, call_type: e.target.value })}
+                placeholder="Discovery, Demo..."
               />
             </div>
             <div>
@@ -104,50 +164,63 @@ export default function NewCall() {
                 className="w-full border rounded px-3 py-2"
                 value={form.outcome}
                 onChange={(e) => setForm({ ...form, outcome: e.target.value })}
+                placeholder="Set follow-up, Closed..."
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Transcript</label>
-            <textarea
-              className="w-full border rounded px-3 py-2 h-48 font-mono text-sm"
-              value={form.transcript}
-              onChange={(e) => setForm({ ...form, transcript: e.target.value })}
-              placeholder="Paste the sales call transcript here..."
-            />
-          </div>
-
-          {!callId ? (
-            <button
-              onClick={createCall}
-              disabled={creating || !form.rep_id || !form.transcript}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {creating ? "Creating..." : "Create Call"}
-            </button>
-          ) : !analysis ? (
+          {mode === "text" ? (
             <div>
-              <p className="text-green-600 mb-2">Call created successfully.</p>
-              <button
-                onClick={analyzeCall}
-                disabled={analyzing}
-                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                {analyzing ? "Analyzing..." : "Analyze with GLM 5.1"}
-              </button>
+              <label className="block text-sm font-medium mb-1">Transcript</label>
+              <textarea
+                className="w-full border rounded px-3 py-2 h-48 font-mono text-sm"
+                value={form.transcript}
+                onChange={(e) => setForm({ ...form, transcript: e.target.value })}
+                placeholder="Paste the sales call transcript here..."
+              />
             </div>
           ) : (
-            <div>
-              <p className="text-green-600 mb-2">Analysis complete!</p>
-              <button
-                onClick={() => router.push(`/calls/${callId}`)}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-              >
-                View Full Scorecard
-              </button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+              <input
+                type="file"
+                id="audio-upload"
+                className="hidden"
+                accept="audio/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              <label htmlFor="audio-upload" className="cursor-pointer group">
+                <div className="text-4xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">🎙️</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {file ? file.name : "Click to upload audio file"}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">MP3, M4A, WAV up to 100MB</p>
+              </label>
+              {file && (
+                <button 
+                  onClick={() => setFile(null)}
+                  className="mt-4 text-xs text-red-600 hover:text-red-700 underline"
+                >
+                  Remove file
+                </button>
+              )}
             </div>
           )}
+
+          <button
+            onClick={handleSubmit}
+            disabled={status !== "idle" || !form.rep_id || (mode === "text" && !form.transcript) || (mode === "audio" && !file)}
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center space-x-2"
+          >
+            {status === "idle" && (mode === "text" ? "Create & Analyze" : "Upload & Transcribe")}
+            {status === "uploading" && <span>⏳ Uploading to S3...</span>}
+            {status === "creating" && <span>📂 Saving Call Record...</span>}
+            {status === "transcribing" && <span>🤖 Starting AI Transcribe...</span>}
+            {status === "completed" && <span>✅ Done! Redirecting...</span>}
+          </button>
+          
+          <p className="text-xs text-gray-500 text-center">
+            Audio processing takes ~30 seconds for a typical sales call.
+          </p>
         </div>
       </div>
     </div>

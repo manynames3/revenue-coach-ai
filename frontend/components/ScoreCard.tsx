@@ -39,14 +39,19 @@ interface Analysis {
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
   const color = value >= 80 ? "bg-green-500" : value >= 60 ? "bg-yellow-500" : "bg-red-500";
+  const textColor = value >= 80 ? "text-green-700" : value >= 60 ? "text-yellow-700" : "text-red-700";
+  
   return (
-    <div className="mb-2">
-      <div className="flex justify-between text-sm mb-1">
-        <span className="capitalize">{label.replace(/_/g, " ")}</span>
-        <span className="font-semibold">{value}</span>
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-500">{label.replace(/_/g, " ")}</span>
+        <span className={`text-sm font-black ${textColor}`}>{value}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
-        <div className={`h-2.5 rounded-full ${color}`} style={{ width: `${value}%` }}></div>
+      <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+        <div 
+          className={`h-full rounded-full transition-all duration-1000 ${color}`} 
+          style={{ width: `${value}%` }}
+        ></div>
       </div>
     </div>
   );
@@ -54,119 +59,180 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 export default function ScoreCard({ analysis }: { analysis: Analysis }) {
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Overall Score</h2>
-          <span className="text-4xl font-bold text-blue-600">{analysis.overall_score ?? "—"}</span>
+    <div className="space-y-8">
+      {/* Header Summary */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex flex-col md:flex-row">
+          <div className="md:w-1/3 bg-blue-600 p-8 text-white flex flex-col justify-center items-center text-center">
+            <span className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">AI Performance Score</span>
+            <div className="text-7xl font-black mb-2">{analysis.overall_score ?? "—"}</div>
+            <div className="bg-white/20 px-4 py-1 rounded-full text-sm font-medium">
+              {analysis.overall_score && analysis.overall_score >= 80 ? "Excellent" : analysis.overall_score && analysis.overall_score >= 60 ? "Average" : "Needs Work"}
+            </div>
+          </div>
+          <div className="md:w-2/3 p-8">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-tight mb-3 flex items-center">
+              <span className="mr-2">🧠</span> Executive Summary
+            </h3>
+            <p className="text-lg text-gray-800 leading-relaxed font-medium">
+              {analysis.summary}
+            </p>
+          </div>
         </div>
-        <p className="text-gray-700">{analysis.summary}</p>
       </div>
 
-      {analysis.scores && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3">Category Scores</h3>
-          {Object.entries(analysis.scores).map(([key, val]) => (
-            <ScoreBar key={key} label={key} value={val ?? 0} />
-          ))}
-        </div>
-      )}
-
-      {analysis.strengths.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3 text-green-700">Strengths</h3>
-          <ul className="list-disc list-inside space-y-1">
-            {analysis.strengths.map((s, i) => <li key={i} className="text-gray-700">{s}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {analysis.missed_opportunities.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3 text-orange-700">Missed Opportunities</h3>
-          <ul className="list-disc list-inside space-y-1">
-            {analysis.missed_opportunities.map((m, i) => <li key={i} className="text-gray-700">{m}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {analysis.objections.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3 text-red-700">Objections</h3>
-          {analysis.objections.map((o, i) => (
-            <div key={i} className="mb-4 p-3 bg-red-50 rounded">
-              <p><strong>Type:</strong> {o.type}</p>
-              <p className="italic mt-1">"{o.customer_quote}"</p>
-              <p className="mt-1"><strong>Rep Response:</strong> {o.rep_response_quality}</p>
-              <p className="mt-1"><strong>Better Response:</strong> {o.better_response}</p>
+      {/* Grid for Scores and Highlights */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Category Scores */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <span className="mr-2 text-blue-500">📊</span> Metrics breakdown
+            </h3>
+            <div className="space-y-3">
+              {analysis.scores && Object.entries(analysis.scores).map(([key, val]) => (
+                <ScoreBar key={key} label={key} value={val ?? 0} />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {analysis.buying_signals.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3 text-green-700">Buying Signals</h3>
-          {analysis.buying_signals.map((b, i) => (
-            <div key={i} className="mb-3 p-3 bg-green-50 rounded">
-              <p><strong>Signal:</strong> {b.signal}</p>
-              <p><strong>Strength:</strong> <span className={
-                b.strength === "strong" ? "text-green-600" : b.strength === "medium" ? "text-yellow-600" : "text-gray-500"
-              }>{b.strength}</span></p>
-              <p className="text-sm text-gray-600 mt-1">{b.why_it_matters}</p>
+          {analysis.coaching_drill && (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100 p-6">
+              <h3 className="text-lg font-bold text-blue-900 mb-2 flex items-center">
+                <span className="mr-2">🎯</span> Suggested Drill
+              </h3>
+              <p className="text-blue-800 text-sm leading-relaxed font-medium">
+                {analysis.coaching_drill}
+              </p>
             </div>
-          ))}
+          )}
         </div>
-      )}
 
-      {analysis.manager_notes.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3">Manager Notes</h3>
-          <ul className="list-disc list-inside space-y-1">
-            {analysis.manager_notes.map((n, i) => <li key={i} className="text-gray-700">{n}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {analysis.coaching_drill && (
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <h3 className="text-lg font-semibold mb-2 text-blue-700">Coaching Drill</h3>
-          <p className="text-gray-700">{analysis.coaching_drill}</p>
-        </div>
-      )}
-
-      {analysis.follow_up_sms && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-2">Follow-Up SMS</h3>
-          <div className="bg-gray-100 p-3 rounded">
-            <p className="text-gray-800 whitespace-pre-wrap">{analysis.follow_up_sms}</p>
+        {/* Center & Right Column: Highlights, Objections, Signals */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Strengths & Missed Opportunities */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-green-50 rounded-2xl border border-green-100 p-6">
+              <h3 className="font-bold text-green-900 mb-4 flex items-center uppercase text-xs tracking-widest">
+                <span className="mr-2">✅</span> What went well
+              </h3>
+              <ul className="space-y-3">
+                {analysis.strengths.map((s, i) => (
+                  <li key={i} className="text-sm text-green-800 flex items-start">
+                    <span className="mr-2 mt-1 block w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-orange-50 rounded-2xl border border-orange-100 p-6">
+              <h3 className="font-bold text-orange-900 mb-4 flex items-center uppercase text-xs tracking-widest">
+                <span className="mr-2">⚠️</span> Needs improvement
+              </h3>
+              <ul className="space-y-3">
+                {analysis.missed_opportunities.map((m, i) => (
+                  <li key={i} className="text-sm text-orange-800 flex items-start">
+                    <span className="mr-2 mt-1 block w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <button
-            onClick={() => navigator.clipboard.writeText(analysis.follow_up_sms || "")}
-            className="mt-2 text-sm text-blue-600 hover:underline"
-          >
-            Copy SMS
-          </button>
-        </div>
-      )}
 
-      {analysis.follow_up_email && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-2">Follow-Up Email</h3>
-          <div className="bg-gray-100 p-3 rounded">
-            <p className="font-medium">{analysis.follow_up_email.subject}</p>
-            <p className="text-gray-800 whitespace-pre-wrap mt-2">{analysis.follow_up_email.body}</p>
-          </div>
-          <button
-            onClick={() => navigator.clipboard.writeText(
-              `Subject: ${analysis.follow_up_email?.subject || ""}\n\n${analysis.follow_up_email?.body || ""}`
+          {/* Objections */}
+          {analysis.objections.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-900 flex items-center uppercase text-xs tracking-widest">
+                <span className="mr-2 text-red-500">🛡️</span> Key Objections Handled
+              </div>
+              <div className="p-0 divide-y divide-gray-100">
+                {analysis.objections.map((o, i) => (
+                  <div key={i} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="bg-red-100 text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-tighter">
+                        {o.type}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase ${o.rep_response_quality === 'good' ? 'text-green-600' : 'text-orange-500'}`}>
+                        Rep Response: {o.rep_response_quality}
+                      </span>
+                    </div>
+                    <p className="text-gray-900 font-bold mb-2">"{o.customer_quote}"</p>
+                    <div className="bg-blue-50 border-l-2 border-blue-400 p-3 text-sm text-blue-900 italic">
+                      <span className="font-bold not-italic text-blue-600 block text-[10px] uppercase mb-1">Coach Recommendation:</span>
+                      {o.better_response}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Buying Signals */}
+          {analysis.buying_signals.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="font-black text-gray-900 mb-4 flex items-center uppercase text-xs tracking-widest">
+                <span className="mr-2 text-green-500">💎</span> Buying Signals detected
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {analysis.buying_signals.map((b, i) => (
+                  <div key={i} className="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${b.strength === 'strong' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800'}`}>
+                        {b.strength}
+                      </span>
+                    </div>
+                    <p className="font-bold text-gray-900 text-sm mb-1">{b.signal}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{b.why_it_matters}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Follow-up Assets */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             {analysis.follow_up_sms && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-gray-900 uppercase text-xs tracking-widest flex items-center">
+                    <span className="mr-2">📱</span> Ready SMS
+                  </h3>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(analysis.follow_up_sms || "")}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div className="bg-gray-100 p-4 rounded-xl text-sm text-gray-800 font-medium">
+                  {analysis.follow_up_sms}
+                </div>
+              </div>
             )}
-            className="mt-2 text-sm text-blue-600 hover:underline"
-          >
-            Copy Email
-          </button>
+            
+            {analysis.follow_up_email && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-gray-900 uppercase text-xs tracking-widest flex items-center">
+                    <span className="mr-2">📧</span> Draft Email
+                  </h3>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(analysis.follow_up_email?.body || "")}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Subject: {analysis.follow_up_email.subject}</p>
+                <div className="bg-gray-100 p-4 rounded-xl text-xs text-gray-800 font-medium line-clamp-4 overflow-hidden">
+                  {analysis.follow_up_email.body}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

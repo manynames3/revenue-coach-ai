@@ -24,9 +24,17 @@ class CallOut(BaseModel):
     call_type: str | None = None
     outcome: str | None = None
     transcript: str | None = None
+    audio_s3_key: str | None = None
+    transcription_job_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UploadUrlResponse(BaseModel):
+    url: str
+    fields: dict[str, str]
+    key: str
 
 
 class CallWithAnalysis(CallOut):

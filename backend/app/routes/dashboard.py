@@ -41,13 +41,12 @@ def dashboard_overview(db: Session = Depends(get_db)):
 
     recent_scores = []
     for analysis, call in recent_analyses:
-        scores = json.loads(analysis.scores_json) if analysis.scores_json else {}
         recent_scores.append({
             "call_id": call.id,
             "lead_name": call.lead_name or "Unknown",
             "rep_id": call.rep_id,
             "overall_score": analysis.overall_score,
-            "scores": scores,
+            "scores": analysis.scores or {},
             "analyzed_at": analysis.created_at.isoformat() if analysis.created_at else None,
         })
 

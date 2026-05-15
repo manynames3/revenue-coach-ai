@@ -7,6 +7,62 @@ export interface Rep {
   created_at: string;
 }
 
+export interface Call {
+  id: string;
+  rep_id: string;
+  organization_id: string;
+  lead_name: string | null;
+  lead_source: string | null;
+  call_type: string | null;
+  outcome: string | null;
+  transcript: string | null;
+  audio_s3_key: string | null;
+  transcription_job_id: string | null;
+  created_at: string;
+  analysis?: Analysis;
+}
+
+export interface Analysis {
+  id: string;
+  call_id: string;
+  overall_score: number;
+  summary: string;
+  scores: {
+    rapport: number;
+    discovery: number;
+    objection_handling: number;
+    closing: number;
+    follow_up: number;
+  };
+  strengths: string[];
+  missed_opportunities: string[];
+  objections: Array<{
+    type: string;
+    customer_quote: string;
+    rep_response_quality: string;
+    better_response: string;
+  }>;
+  buying_signals: Array<{
+    signal: string;
+    strength: string;
+    why_it_matters: string;
+  }>;
+  manager_notes: string[];
+  coaching_drill: string;
+  follow_up_sms: string;
+  follow_up_email: {
+    subject: string;
+    body: string;
+  };
+  created_at: string;
+}
+
+export interface UploadUrlResponse {
+  url: string;
+  fields: Record<string, string>;
+  key: string;
+}
+
 export interface DashboardOverview {
   total_reps: number;
   total_calls: number;

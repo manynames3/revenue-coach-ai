@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     zai_model: str = "glm-5.1"
     mock_ai: bool = False
 
+    # AWS Settings
+    aws_region: str = "us-east-1"
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_s3_bucket: str = "revenuecoach-audio"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
