@@ -1,11 +1,12 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BarChart3, FilePlus2, LayoutDashboard, Megaphone, ShieldCheck, Target, Users } from "lucide-react";
+import { BarChart3, FilePlus2, LayoutDashboard, Megaphone, PlayCircle, ShieldCheck, Target, Users } from "lucide-react";
 
 const navigation = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sales", label: "Sales Page", icon: Megaphone },
+  { href: "/demo", label: "Demo", icon: PlayCircle },
   { href: "/practice", label: "Practice Lab", icon: Target },
   { href: "/calls/new", label: "New Call", icon: FilePlus2 },
   { href: "/reps", label: "Reps", icon: Users },
@@ -20,17 +21,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-slate-200 bg-white lg:block">
+    <div className="min-h-screen bg-[#f6f8ff] text-[#08043f]">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-[#dfe4ff] bg-white lg:block">
         <div className="flex h-full flex-col">
-          <div className="border-b border-slate-200 px-5 py-5">
+          <div className="border-b border-[#dfe4ff] px-5 py-5">
             <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#5c67ff] text-white">
                 <BarChart3 className="h-5 w-5" aria-hidden="true" />
               </span>
               <span>
-                <span className="block text-sm font-black text-slate-950">RevenueCoach AI</span>
-                <span className="block text-xs font-medium text-slate-500">Sales coaching workspace</span>
+                <span className="block text-xl font-extrabold italic text-[#5c67ff]">RevenueCoach</span>
+                <span className="block text-xs font-semibold text-[#5a5886]">Sales coaching workspace</span>
               </span>
             </Link>
           </div>
@@ -45,8 +46,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-colors ${
                     active
-                      ? "bg-slate-950 text-white"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                      ? "bg-[#090044] text-white"
+                      : "text-[#4c4a7d] hover:bg-[#eef1ff] hover:text-[#090044]"
                   }`}
                 >
                   <Icon className="h-4 w-4" aria-hidden="true" />
@@ -56,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-slate-200 p-4">
+          <div className="border-t border-[#dfe4ff] p-4">
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
               <div className="flex items-center gap-2 text-xs font-black uppercase text-emerald-800">
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
@@ -71,15 +72,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-10 border-b border-[#dfe4ff] bg-white/95 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <Link href="/" className="flex items-center gap-2 text-sm font-black text-slate-950">
+            <Link href="/" className="flex items-center gap-2 text-sm font-black text-[#090044]">
               <BarChart3 className="h-5 w-5" aria-hidden="true" />
-              RevenueCoach AI
+              RevenueCoach
             </Link>
             <Link
               href="/calls/new"
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-bold text-white"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-[#090044] px-3 text-sm font-bold text-white"
             >
               <FilePlus2 className="h-4 w-4" aria-hidden="true" />
               New
@@ -94,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-bold ${
-                    active ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
+                    active ? "bg-[#090044] text-white" : "bg-[#eef1ff] text-[#4c4a7d]"
                   }`}
                 >
                   <Icon className="h-4 w-4" aria-hidden="true" />

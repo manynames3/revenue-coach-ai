@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-50 text-slate-950 antialiased;
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  @apply bg-[#f6f8ff] text-[#08043f] antialiased;
 }
 
 button,
@@ -11,9 +12,9 @@ a,
 input,
 select,
 textarea {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5c67ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f8ff];
 }
 
 ::selection {
-  @apply bg-blue-100 text-blue-950;
+  @apply bg-[#dfe4ff] text-[#090044];
 }

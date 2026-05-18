@@ -41,7 +41,7 @@ function statusClass(status: Call["status"]) {
   if (status === "failed") return "bg-rose-50 text-rose-700 border-rose-200";
   if (status === "analyzing" || status === "transcribing") return "bg-blue-50 text-blue-700 border-blue-200";
   if (status === "transcribed") return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-slate-50 text-slate-600 border-slate-200";
+  return "bg-[#fbfcff] text-[#5a5886] border-[#dfe4ff]";
 }
 
 const revenueUseCases = [
@@ -74,34 +74,34 @@ function StatTile({
   icon: typeof BarChart3;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-[#dfe4ff] bg-white p-4 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase text-slate-500">{label}</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">{value}</p>
+          <p className="text-xs font-black uppercase text-[#5a5886]">{label}</p>
+          <p className="mt-2 text-3xl font-black text-[#090044]">{value}</p>
         </div>
-        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
       </div>
-      <p className="mt-3 text-sm text-slate-500">{detail}</p>
+      <p className="mt-3 text-sm text-[#5a5886]">{detail}</p>
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+    <div className="rounded-lg border border-dashed border-[#bfc6ff] bg-white p-8 text-center">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
         <FilePlus2 className="h-5 w-5" aria-hidden="true" />
       </div>
-      <h3 className="mt-4 text-base font-black text-slate-950">No calls reviewed yet</h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+      <h3 className="mt-4 text-base font-black text-[#090044]">No calls reviewed yet</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#5a5886]">
         Add a transcript or audio file to generate a scorecard and coaching plan.
       </p>
       <Link
         href="/calls/new"
-        className="mt-5 inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-bold text-white hover:bg-slate-800"
+        className="mt-5 inline-flex h-10 items-center gap-2 rounded-full bg-[#090044] px-4 text-sm font-bold text-white hover:bg-[#1b1670]"
       >
         <FilePlus2 className="h-4 w-4" aria-hidden="true" />
         Add first call
@@ -211,15 +211,15 @@ export default function Dashboard() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-xs font-black uppercase text-blue-700">Manager workspace</p>
-          <h1 className="mt-1 text-3xl font-black text-slate-950">Sales coaching dashboard</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="text-xs font-black uppercase text-[#1684ff]">Manager workspace</p>
+          <h1 className="mt-1 text-3xl font-black text-[#090044]">Revenue coaching command center</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4c4a7d]">
             Review call quality, surface coaching priorities, and move reps toward cleaner discovery.
           </p>
         </div>
         <Link
           href="/calls/new"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-bold text-white hover:bg-slate-800"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#090044] px-4 text-sm font-bold text-white hover:bg-[#1b1670]"
         >
           <FilePlus2 className="h-4 w-4" aria-hidden="true" />
           New call
@@ -233,13 +233,13 @@ export default function Dashboard() {
         <StatTile label="Avg score" value={formatScore(data.average_score)} detail="Across analyzed calls" icon={TrendingUp} />
       </div>
 
-      <section className="rounded-lg border border-slate-200 bg-white">
-        <div className="flex flex-col justify-between gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center">
+      <section className="rounded-lg border border-[#dfe4ff] bg-white shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
+        <div className="flex flex-col justify-between gap-3 border-b border-[#dfe4ff] px-5 py-4 md:flex-row md:items-center">
           <div>
-            <h2 className="text-base font-black text-slate-950">Revenue practice loop</h2>
-            <p className="text-sm text-slate-500">Move from scorecard insight to repeatable seller behavior.</p>
+            <h2 className="text-base font-black text-[#090044]">Revenue practice loop</h2>
+            <p className="text-sm text-[#5a5886]">Move from scorecard insight to repeatable seller behavior.</p>
           </div>
-          <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-bold text-blue-700">
+          <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-bold text-[#3d42ff]">
             Open practice lab
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
@@ -248,14 +248,14 @@ export default function Dashboard() {
           {revenueUseCases.map((useCase) => {
             const Icon = useCase.icon;
             return (
-              <Link key={useCase.title} href="/practice" className="rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
+              <Link key={useCase.title} href="/practice" className="rounded-lg border border-[#dfe4ff] p-4 hover:bg-[#fbfcff]">
                 <div className="mb-3 flex items-start gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </span>
-                  <h3 className="font-black text-slate-950">{useCase.title}</h3>
+                  <h3 className="font-black text-[#090044]">{useCase.title}</h3>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">{useCase.detail}</p>
+                <p className="text-sm leading-6 text-[#4c4a7d]">{useCase.detail}</p>
               </Link>
             );
           })}
@@ -263,13 +263,13 @@ export default function Dashboard() {
       </section>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <section className="rounded-lg border border-slate-200 bg-white xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <section className="rounded-lg border border-[#dfe4ff] bg-white shadow-[0_12px_30px_rgba(9,0,68,0.04)] xl:col-span-2">
+          <div className="flex items-center justify-between border-b border-[#dfe4ff] px-5 py-4">
             <div>
-              <h2 className="text-base font-black text-slate-950">Recent scorecards</h2>
-              <p className="text-sm text-slate-500">Newest analyzed conversations</p>
+              <h2 className="text-base font-black text-[#090044]">Recent scorecards</h2>
+              <p className="text-sm text-[#5a5886]">Newest analyzed conversations</p>
             </div>
-            <Link href="/calls/new" className="inline-flex items-center gap-1 text-sm font-bold text-blue-700">
+            <Link href="/calls/new" className="inline-flex items-center gap-1 text-sm font-bold text-[#3d42ff]">
               Add call
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -280,25 +280,25 @@ export default function Dashboard() {
               <EmptyState />
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#eef1ff]">
               {data.recent_scores.map((score) => (
                 <Link
                   key={score.call_id}
                   href={`/calls/${score.call_id}`}
-                  className="grid gap-3 px-5 py-4 transition-colors hover:bg-slate-50 md:grid-cols-[1fr_120px_120px]"
+                  className="grid gap-3 px-5 py-4 transition-colors hover:bg-[#fbfcff] md:grid-cols-[1fr_120px_120px]"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-950">{score.lead_name || "Unknown lead"}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="truncate text-sm font-black text-[#090044]">{score.lead_name || "Unknown lead"}</p>
+                    <p className="mt-1 text-xs text-[#5a5886]">
                       Analyzed {new Date(score.analyzed_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase text-slate-400">Score</p>
-                    <p className="mt-1 text-lg font-black text-slate-950">{formatScore(score.overall_score)}</p>
+                    <p className="text-xs font-black uppercase text-[#8c8ab3]">Score</p>
+                    <p className="mt-1 text-lg font-black text-[#090044]">{formatScore(score.overall_score)}</p>
                   </div>
                   <div className="flex items-center justify-end">
-                    <span className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-3 text-xs font-bold text-slate-600">
+                    <span className="inline-flex h-8 items-center gap-1 rounded-md border border-[#dfe4ff] px-3 text-xs font-bold text-[#4c4a7d]">
                       Review
                       <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                     </span>
@@ -310,31 +310,31 @@ export default function Dashboard() {
         </section>
 
         <aside className="space-y-5">
-          <section className="rounded-lg border border-slate-200 bg-white p-5">
+          <section className="rounded-lg border border-[#dfe4ff] bg-white p-5 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
             <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700">
+              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
                 <BarChart3 className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
-                <h2 className="text-base font-black text-slate-950">Coaching priority</h2>
+                <h2 className="text-base font-black text-[#090044]">Coaching priority</h2>
                 {weakestDimension ? (
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                  <p className="mt-2 text-sm leading-6 text-[#4c4a7d]">
                     The lowest recent category is{" "}
-                    <span className="font-black text-slate-950">{weakestDimension.key.replace(/_/g, " ")}</span> at{" "}
-                    <span className="font-black text-slate-950">{formatScore(weakestDimension.average)}</span>.
+                    <span className="font-black text-[#090044]">{weakestDimension.key.replace(/_/g, " ")}</span> at{" "}
+                    <span className="font-black text-[#090044]">{formatScore(weakestDimension.average)}</span>.
                   </p>
                 ) : (
-                  <p className="mt-2 text-sm leading-6 text-slate-600">Analyze calls to reveal the first coaching theme.</p>
+                  <p className="mt-2 text-sm leading-6 text-[#4c4a7d]">Analyze calls to reveal the first coaching theme.</p>
                 )}
               </div>
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5">
+          <section className="rounded-lg border border-[#dfe4ff] bg-white p-5 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-black text-slate-950">System readiness</h2>
-                <p className="mt-1 text-sm text-slate-500">{ready?.status || "checking"}</p>
+                <h2 className="text-base font-black text-[#090044]">System readiness</h2>
+                <p className="mt-1 text-sm text-[#5a5886]">{ready?.status || "checking"}</p>
               </div>
               <ShieldCheck className="h-5 w-5 text-emerald-600" aria-hidden="true" />
             </div>
@@ -345,7 +345,7 @@ export default function Dashboard() {
                 ["Audio bucket", ready?.checks.aws_bucket_configured],
               ].map(([label, ok]) => (
                 <div key={label as string} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-600">{label as string}</span>
+                  <span className="font-medium text-[#4c4a7d]">{label as string}</span>
                   <span className={`font-black ${ok ? "text-emerald-700" : "text-amber-700"}`}>
                     {ok ? "Ready" : "Needs config"}
                   </span>
@@ -354,19 +354,19 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-4">
-              <h2 className="text-base font-black text-slate-950">Needs attention</h2>
-              <p className="text-sm text-slate-500">Calls ready for review or recovery</p>
+          <section className="rounded-lg border border-[#dfe4ff] bg-white shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
+            <div className="border-b border-[#dfe4ff] px-5 py-4">
+              <h2 className="text-base font-black text-[#090044]">Needs attention</h2>
+              <p className="text-sm text-[#5a5886]">Calls ready for review or recovery</p>
             </div>
             {needsReview.length === 0 ? (
-              <p className="p-5 text-sm leading-6 text-slate-500">No blocked or ready-to-analyze calls right now.</p>
+              <p className="p-5 text-sm leading-6 text-[#5a5886]">No blocked or ready-to-analyze calls right now.</p>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-[#eef1ff]">
                 {needsReview.map((call) => (
-                  <Link key={call.id} href={`/calls/${call.id}`} className="block px-5 py-3 hover:bg-slate-50">
+                  <Link key={call.id} href={`/calls/${call.id}`} className="block px-5 py-3 hover:bg-[#fbfcff]">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-bold text-slate-950">{call.lead_name || "Untitled call"}</p>
+                      <p className="truncate text-sm font-bold text-[#090044]">{call.lead_name || "Untitled call"}</p>
                       <span className={`shrink-0 rounded-md border px-2 py-1 text-xs font-bold ${statusClass(call.status)}`}>
                         {statusLabel(call.status)}
                       </span>

@@ -29,7 +29,7 @@ const navItems = [
   { label: "Platform", href: "#platform", hasMenu: true },
   { label: "Solutions", href: "#solutions", hasMenu: true },
   { label: "Use Cases", href: "#use-cases", hasMenu: false },
-  { label: "Demo", href: "#demo", hasMenu: false },
+  { label: "Demo", href: "/demo", hasMenu: false },
   { label: "About", href: "#who-it-helps", hasMenu: false },
 ];
 
@@ -292,7 +292,7 @@ const SalesPage: MarketingPage = () => {
             </nav>
 
             <a
-              href="#demo"
+              href="/demo"
               className="hidden h-11 items-center justify-center gap-2 rounded-full bg-[#08043f] px-5 text-sm font-bold text-white hover:bg-[#1b1670] sm:inline-flex"
             >
               View demo
@@ -315,7 +315,7 @@ const SalesPage: MarketingPage = () => {
                 </p>
                 <div className="mt-8 flex flex-wrap justify-center gap-3">
                   <a
-                    href="#demo"
+                    href="/demo"
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#5c67ff] px-6 text-sm font-bold text-white shadow-[0_16px_35px_rgba(92,103,255,0.28)] hover:bg-[#4752f3]"
                   >
                     See the demo flow
@@ -565,8 +565,8 @@ const SalesPage: MarketingPage = () => {
                         Watch one call become a coaching plan.
                       </h2>
                       <p className="mt-4 text-base leading-7 text-[#4c4a7d]">
-                        The landing-page demo now stays in the same visual system: no app sidebar, no abrupt workspace
-                        jump, just the revenue-coaching loop a buyer needs to understand.
+                        See the full coaching loop before opening the product workspace: the call moment, buyer
+                        psychology signal, manager action, and practice drill.
                       </p>
                     </div>
 

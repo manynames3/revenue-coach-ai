@@ -153,13 +153,13 @@ export default function NewCall() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-xs font-black uppercase text-blue-700">Call intake</p>
-          <h1 className="mt-1 text-3xl font-black text-slate-950">Add a sales conversation</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="text-xs font-black uppercase text-[#1684ff]">Call intake</p>
+          <h1 className="mt-1 text-3xl font-black text-[#090044]">Add a sales conversation</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4c4a7d]">
             Capture the rep, deal context, and transcript source before generating the scorecard.
           </p>
         </div>
-        <div className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+        <div className="inline-flex h-10 items-center gap-2 rounded-md border border-[#dfe4ff] bg-white px-3 text-sm font-bold text-[#4c4a7d]">
           {status !== "idle" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {statusText}
         </div>
@@ -175,7 +175,7 @@ export default function NewCall() {
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
-        <aside className="rounded-lg border border-slate-200 bg-white p-4">
+        <aside className="rounded-lg border border-[#dfe4ff] bg-white p-4 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
           <div className="space-y-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -191,7 +191,7 @@ export default function NewCall() {
                   key={step.label}
                   onClick={() => setCurrentStep(index)}
                   className={`flex w-full items-center justify-between rounded-md px-3 py-3 text-left text-sm font-black ${
-                    active ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"
+                    active ? "bg-[#090044] text-white" : "text-[#4c4a7d] hover:bg-[#eef1ff]"
                   }`}
                 >
                   <span className="flex items-center gap-3">
@@ -204,20 +204,20 @@ export default function NewCall() {
             })}
           </div>
 
-          <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <div className="mt-5 rounded-lg border border-[#bfc6ff] bg-[#eef1ff] p-3">
             <div className="flex items-start gap-2">
-              <Lock className="mt-0.5 h-4 w-4 text-blue-700" aria-hidden="true" />
-              <p className="text-xs leading-5 text-blue-900">
+              <Lock className="mt-0.5 h-4 w-4 text-[#5c67ff]" aria-hidden="true" />
+              <p className="text-xs leading-5 text-[#312f61]">
                 Audio files upload directly to S3. The API stores transcript and scorecard data for review.
               </p>
             </div>
           </div>
         </aside>
 
-        <section className="rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-base font-black text-slate-950">{steps[currentStep].label}</h2>
-            <p className="mt-1 text-sm text-slate-500">
+        <section className="rounded-lg border border-[#dfe4ff] bg-white shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
+          <div className="border-b border-[#dfe4ff] px-5 py-4">
+            <h2 className="text-base font-black text-[#090044]">{steps[currentStep].label}</h2>
+            <p className="mt-1 text-sm text-[#5a5886]">
               {currentStep === 0 && "Choose the seller connected to this call."}
               {currentStep === 1 && "Add the lead and deal context managers need later."}
               {currentStep === 2 && "Paste a transcript or upload audio for transcription."}
@@ -229,9 +229,9 @@ export default function NewCall() {
             {currentStep === 0 && (
               <div className="space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-black text-slate-700">Sales rep</span>
+                  <span className="mb-2 block text-sm font-black text-[#312f61]">Sales rep</span>
                   <select
-                    className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950"
+                    className="h-11 w-full rounded-md border border-[#cbd2f7] bg-white px-3 text-sm text-[#090044]"
                     value={form.rep_id}
                     onChange={(e) => setForm({ ...form, rep_id: e.target.value })}
                   >
@@ -244,9 +244,9 @@ export default function NewCall() {
                   </select>
                 </label>
                 {selectedRep && (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-black text-slate-950">{selectedRep.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{selectedRep.email || "No email on file"}</p>
+                  <div className="rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
+                    <p className="text-sm font-black text-[#090044]">{selectedRep.name}</p>
+                    <p className="mt-1 text-sm text-[#5a5886]">{selectedRep.email || "No email on file"}</p>
                   </div>
                 )}
               </div>
@@ -255,36 +255,36 @@ export default function NewCall() {
             {currentStep === 1 && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="md:col-span-2">
-                  <span className="mb-2 block text-sm font-black text-slate-700">Lead name</span>
+                  <span className="mb-2 block text-sm font-black text-[#312f61]">Lead name</span>
                   <input
-                    className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
                     value={form.lead_name}
                     onChange={(e) => setForm({ ...form, lead_name: e.target.value })}
                     placeholder="Jordan Lee"
                   />
                 </label>
                 <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">Lead source</span>
+                  <span className="mb-2 block text-sm font-black text-[#312f61]">Lead source</span>
                   <input
-                    className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
                     value={form.lead_source}
                     onChange={(e) => setForm({ ...form, lead_source: e.target.value })}
                     placeholder="Referral"
                   />
                 </label>
                 <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">Call type</span>
+                  <span className="mb-2 block text-sm font-black text-[#312f61]">Call type</span>
                   <input
-                    className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
                     value={form.call_type}
                     onChange={(e) => setForm({ ...form, call_type: e.target.value })}
                     placeholder="Strategy call"
                   />
                 </label>
                 <label className="md:col-span-2">
-                  <span className="mb-2 block text-sm font-black text-slate-700">Outcome</span>
+                  <span className="mb-2 block text-sm font-black text-[#312f61]">Outcome</span>
                   <input
-                    className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
                     value={form.outcome}
                     onChange={(e) => setForm({ ...form, outcome: e.target.value })}
                     placeholder="Follow-up scheduled"
@@ -295,11 +295,11 @@ export default function NewCall() {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
+                <div className="inline-flex rounded-lg border border-[#dfe4ff] bg-[#eef1ff] p-1">
                   <button
                     onClick={() => setMode("text")}
                     className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-black ${
-                      mode === "text" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600"
+                      mode === "text" ? "bg-white text-[#090044] shadow-sm" : "text-[#4c4a7d]"
                     }`}
                   >
                     <FileText className="h-4 w-4" aria-hidden="true" />
@@ -308,7 +308,7 @@ export default function NewCall() {
                   <button
                     onClick={() => setMode("audio")}
                     className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-black ${
-                      mode === "audio" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600"
+                      mode === "audio" ? "bg-white text-[#090044] shadow-sm" : "text-[#4c4a7d]"
                     }`}
                   >
                     <FileAudio className="h-4 w-4" aria-hidden="true" />
@@ -318,16 +318,16 @@ export default function NewCall() {
 
                 {mode === "text" ? (
                   <label className="block">
-                    <span className="mb-2 block text-sm font-black text-slate-700">Transcript</span>
+                    <span className="mb-2 block text-sm font-black text-[#312f61]">Transcript</span>
                     <textarea
-                      className="min-h-72 w-full rounded-md border border-slate-300 px-3 py-3 font-mono text-sm leading-6"
+                      className="min-h-72 w-full rounded-md border border-[#cbd2f7] px-3 py-3 font-mono text-sm leading-6 text-[#090044]"
                       value={form.transcript}
                       onChange={(e) => setForm({ ...form, transcript: e.target.value })}
                       placeholder="Paste the sales call transcript here..."
                     />
                   </label>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                  <div className="rounded-lg border border-dashed border-[#bfc6ff] bg-[#fbfcff] p-8 text-center">
                     <input
                       type="file"
                       id="audio-upload"
@@ -336,16 +336,16 @@ export default function NewCall() {
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
                     />
                     <label htmlFor="audio-upload" className="mx-auto block max-w-md cursor-pointer">
-                      <Upload className="mx-auto h-9 w-9 text-slate-400" aria-hidden="true" />
-                      <span className="mt-3 block text-sm font-black text-slate-950">
+                      <Upload className="mx-auto h-9 w-9 text-[#8c8ab3]" aria-hidden="true" />
+                      <span className="mt-3 block text-sm font-black text-[#090044]">
                         {file ? file.name : "Choose an audio file"}
                       </span>
-                      <span className="mt-1 block text-xs text-slate-500">MP3, M4A, WAV, or WebM up to 100 MB</span>
+                      <span className="mt-1 block text-xs text-[#5a5886]">MP3, M4A, WAV, or WebM up to 100 MB</span>
                     </label>
                     {file && (
                       <button
                         onClick={() => setFile(null)}
-                        className="mt-4 rounded-md border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-white"
+                        className="mt-4 rounded-md border border-[#cbd2f7] px-3 py-2 text-sm font-bold text-[#4c4a7d] hover:bg-white"
                       >
                         Remove file
                       </button>
@@ -357,23 +357,23 @@ export default function NewCall() {
 
             {currentStep === 3 && (
               <div className="space-y-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
                   <dl className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <dt className="text-xs font-black uppercase text-slate-400">Rep</dt>
-                      <dd className="mt-1 text-sm font-bold text-slate-950">{selectedRep?.name || "Not selected"}</dd>
+                      <dt className="text-xs font-black uppercase text-[#8c8ab3]">Rep</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#090044]">{selectedRep?.name || "Not selected"}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs font-black uppercase text-slate-400">Lead</dt>
-                      <dd className="mt-1 text-sm font-bold text-slate-950">{form.lead_name || "Missing"}</dd>
+                      <dt className="text-xs font-black uppercase text-[#8c8ab3]">Lead</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#090044]">{form.lead_name || "Missing"}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs font-black uppercase text-slate-400">Source</dt>
-                      <dd className="mt-1 text-sm font-bold text-slate-950">{mode === "text" ? "Transcript" : file?.name || "Audio"}</dd>
+                      <dt className="text-xs font-black uppercase text-[#8c8ab3]">Source</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#090044]">{mode === "text" ? "Transcript" : file?.name || "Audio"}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs font-black uppercase text-slate-400">Call type</dt>
-                      <dd className="mt-1 text-sm font-bold text-slate-950">{form.call_type || "Uncategorized"}</dd>
+                      <dt className="text-xs font-black uppercase text-[#8c8ab3]">Call type</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#090044]">{form.call_type || "Uncategorized"}</dd>
                     </div>
                   </dl>
                 </div>
@@ -381,7 +381,7 @@ export default function NewCall() {
                 <button
                   onClick={handleSubmit}
                   disabled={!canSubmit}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#090044] px-4 text-sm font-black text-white hover:bg-[#1b1670] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
                 >
                   {status !== "idle" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
                   {mode === "text" ? "Create scorecard" : "Upload and transcribe"}
@@ -390,18 +390,18 @@ export default function NewCall() {
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4">
+          <div className="flex items-center justify-between border-t border-[#dfe4ff] px-5 py-4">
             <button
               onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
               disabled={currentStep === 0}
-              className="h-9 rounded-md border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              className="h-9 rounded-md border border-[#cbd2f7] px-3 text-sm font-bold text-[#4c4a7d] hover:bg-[#fbfcff] disabled:opacity-40"
             >
               Back
             </button>
             <button
               onClick={() => setCurrentStep((step) => Math.min(steps.length - 1, step + 1))}
               disabled={currentStep === steps.length - 1}
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-[#090044] px-3 text-sm font-bold text-white hover:bg-[#1b1670] disabled:opacity-40"
             >
               Next
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
