@@ -1,6 +1,8 @@
 # Architecture
 
-RevenueCoach AI is a three-tier web application with an external AI/audio processing boundary. The Next.js frontend handles dashboard, rep, and call workflows. The FastAPI backend owns the REST API, relational data model, AI analysis orchestration, and AWS transcription integration. PostgreSQL stores reps, calls, transcripts, and structured scorecards.
+RevenueCoach AI is a three-tier web application with an external AI/audio processing boundary. The Next.js frontend handles dashboard, rep, and call workflows. The FastAPI backend owns the REST API, relational data model, AI analysis orchestration, and AWS transcription integration. PostgreSQL stores reps, calls, transcripts, structured scorecards, and high-ticket sales psychology feedback.
+
+The public demo deploys the frontend to Cloudflare Pages and the backend to AWS API Gateway plus Lambda, with private RDS PostgreSQL for persistence.
 
 ## Container Diagram
 
@@ -8,18 +10,20 @@ RevenueCoach AI is a three-tier web application with an external AI/audio proces
 flowchart LR
     manager["Person: Sales manager or team lead"]
 
-    subgraph browser["Browser"]
-        frontend["Container: Next.js UI<br/>React, TypeScript, Tailwind<br/>Dashboard, reps, calls, scorecards"]
+    subgraph edge["Cloudflare Pages"]
+        frontend["Container: Static Next.js UI<br/>React, TypeScript, Tailwind<br/>Dashboard, reps, calls, scorecards"]
     end
 
-    backend["Container: FastAPI API<br/>Python, SQLAlchemy, Pydantic<br/>REST endpoints and service orchestration"]
-    db[("Container: PostgreSQL<br/>Relational records plus JSONB scorecards")]
+    api_gateway["Container: AWS HTTP API Gateway<br/>HTTPS REST entrypoint"]
+    backend["Container: AWS Lambda FastAPI API<br/>Python, Mangum, SQLAlchemy, Pydantic<br/>REST endpoints and service orchestration"]
+    db[("Container: Amazon RDS PostgreSQL 16<br/>Relational records plus JSONB scorecards and psychology feedback")]
     s3[("External container: Amazon S3<br/>Audio uploads and transcript JSON")]
     transcribe["External service: Amazon Transcribe<br/>Async speech-to-text jobs"]
     glm["External service: Z.AI GLM 5.1<br/>OpenAI-compatible chat completions"]
 
     manager --> frontend
-    frontend -->|"REST JSON"| backend
+    frontend -->|"REST JSON"| api_gateway
+    api_gateway -->|"Lambda proxy event"| backend
     frontend -->|"Presigned POST audio upload"| s3
     backend -->|"SQLAlchemy ORM"| db
     backend -->|"Chat completion request"| glm
@@ -40,6 +44,8 @@ flowchart LR
 6. The AI response is parsed into Pydantic models, stored in the `call_analyses` table, and returned to the UI as a scorecard.
 7. The call status moves to `analyzed`. Repeated analysis requests return the existing scorecard to avoid duplicated model output.
 8. The dashboard reads aggregate metrics from `/dashboard/overview`.
+
+The analysis contract includes a high-ticket sales psychology section. It scores trust and safety, problem clarity, emotional depth, consequence awareness, decision clarity, money readiness, urgency, and resistance management. It also returns better question suggestions, likely underlying objection concerns, and a next-call strategy.
 
 ### Audio Upload and Transcription
 
@@ -75,14 +81,23 @@ Calls use explicit status values so asynchronous audio and AI work can be retrie
 Local development uses Docker Compose:
 
 - `frontend`: Node 20 Alpine image running the Next.js development server on port `3000`.
-- `backend`: Python 3.12 image running Uvicorn with reload on port `8000`.
+- `backend`: Python 3.12 image running Uvicorn on port `8000`.
 - `db`: PostgreSQL 16 Alpine on port `5432` with a named volume.
 
 The backend image runs `alembic upgrade head` before starting Uvicorn. The application still has a `create_all` fallback for local development, but Alembic is the documented schema path.
 
-The frontend can also be exported as static files for Cloudflare Pages. `frontend/next.config.js` uses static export settings, and `frontend/wrangler.toml` points Cloudflare Pages at the `out` build directory. This deploys only the browser app; `NEXT_PUBLIC_API_URL` must point to a separately deployed FastAPI backend.
+The public demo uses a split serverless deployment:
 
-External dependencies are not provisioned by Compose. Real AI analysis requires Z.AI configuration, and the audio flow requires AWS credentials, an S3 bucket, bucket CORS policy, and Amazon Transcribe permissions. Production backend deployment is listed on the roadmap, but this repository does not yet include Terraform, ECS/Fargate configuration, managed secrets, or production CORS policy.
+- Cloudflare Pages serves the static Next.js export from `frontend/out`.
+- `NEXT_PUBLIC_API_URL` is compiled into the frontend and currently points to `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
+- AWS HTTP API Gateway exposes the FastAPI app over HTTPS.
+- AWS Lambda runs the FastAPI app through `backend/app/lambda_handler.py` and Mangum.
+- Amazon RDS PostgreSQL stores application data in a private subnet.
+- An S3 bucket stores uploaded audio and Transcribe output.
+- VPC endpoints provide private Lambda access to S3 and Amazon Transcribe.
+- `backend/app/migration_handler.py` supports one-off Lambda schema migration work against private RDS without exposing the database publicly.
+
+External dependencies are not provisioned by Compose. Real AI analysis requires Z.AI configuration, and the audio flow requires AWS credentials, an S3 bucket, bucket CORS policy, and Amazon Transcribe permissions. The deployed demo uses mock AI output so the public app can be reviewed without a model key.
 
 ## Key Constraints
 
@@ -91,4 +106,6 @@ External dependencies are not provisioned by Compose. Real AI analysis requires 
 - Development CORS is permissive.
 - The backend avoids handling raw audio bytes, but it does read transcription output from S3 after Amazon Transcribe completes.
 - The AI contract depends on strict JSON prompting and Pydantic validation rather than provider-native structured output enforcement.
+- The high-ticket sales psychology feedback is question-led and buyer-centered; it is not an official implementation of any proprietary sales methodology.
 - `MOCK_AI=true` is useful for local development but can hide provider or prompt failures until a real API key is used.
+- The current AWS resources were created outside Terraform/CDK. Reproducible infrastructure is a clear next step before treating the deployment as production.

@@ -24,6 +24,7 @@ class CallAnalysis(Base):
     objections: Mapped[list[dict[str, Any]]] = mapped_column(json_document_type(), nullable=True)
     buying_signals: Mapped[list[dict[str, Any]]] = mapped_column(json_document_type(), nullable=True)
     manager_notes: Mapped[list[str]] = mapped_column(json_document_type(), nullable=True)
+    sales_psychology: Mapped[dict[str, Any]] = mapped_column(json_document_type(), nullable=True)
     coaching_drill: Mapped[str] = mapped_column(Text, nullable=True)
     follow_up_sms: Mapped[str] = mapped_column(Text, nullable=True)
     follow_up_email_subject: Mapped[str] = mapped_column(String, nullable=True)

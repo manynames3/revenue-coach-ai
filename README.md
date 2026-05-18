@@ -1,21 +1,27 @@
 # RevenueCoach AI
 
-RevenueCoach AI is a full-stack sales coaching application that turns sales-call transcripts or uploaded audio into structured manager scorecards. It combines a Next.js dashboard, a FastAPI service, PostgreSQL JSONB persistence, direct browser-to-S3 audio uploads, Amazon Transcribe, and GLM 5.1 analysis through an OpenAI-compatible client.
+RevenueCoach AI is a full-stack sales coaching application that turns sales-call transcripts or uploaded audio into structured manager scorecards. It combines a Next.js dashboard, a FastAPI service, PostgreSQL JSONB persistence, direct browser-to-S3 audio uploads, Amazon Transcribe, and GLM 5.1 analysis through an OpenAI-compatible client, with a high-ticket sales psychology lens for question quality, pain depth, urgency, money readiness, and resistance management.
 
-Live demo: no public deployment is currently configured. Run the project locally with Docker Compose.
+Live demo: [https://revenue-coach-ai.pages.dev](https://revenue-coach-ai.pages.dev)
+
+Sales page: [https://revenue-coach-ai.pages.dev/sales](https://revenue-coach-ai.pages.dev/sales)
+
+Public API: `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`
+
+The public demo runs the static Next.js frontend on Cloudflare Pages and the FastAPI backend on AWS API Gateway, Lambda, and RDS PostgreSQL. Demo AI scoring is configured with `MOCK_AI=true`; local or production model-backed scoring uses `ZAI_API_KEY`.
 
 ## About
 
-The app is designed for sales managers and team leads who need a repeatable way to audit calls, spot coaching opportunities, and review rep performance. Users can add reps, create call records from pasted transcripts or audio files, trigger AI coaching, and review scorecards with discovery, objection handling, closing, follow-up, manager notes, buying signals, and follow-up message drafts.
+The app is designed for sales managers and team leads who need a repeatable way to audit calls, spot coaching opportunities, and review rep performance. Users can add reps, create call records from pasted transcripts or audio files, trigger AI coaching, and review scorecards with discovery, objection handling, closing, follow-up, manager notes, buying signals, high-ticket psychology feedback, better question suggestions, and follow-up message drafts.
 
 ## Tech Stack
 
-- Frontend: Next.js 14, React 18, TypeScript, Tailwind CSS
+- Frontend: Next.js 16, React 18, TypeScript, Tailwind CSS
 - Backend: FastAPI, Python 3.12, SQLAlchemy 2.0, Pydantic 2
 - Database: PostgreSQL 16 with JSONB fields for nested AI scorecards
 - AI: Z.AI GLM 5.1 through the OpenAI Python SDK's compatible client interface
 - Audio pipeline: Amazon S3 presigned POST uploads and Amazon Transcribe
-- Deployment/runtime: Docker Compose for local review and Cloudflare Pages static export for the frontend
+- Deployment/runtime: Docker Compose for local review, Cloudflare Pages for the frontend, AWS API Gateway and Lambda for the public API, and Amazon RDS for managed PostgreSQL
 - Quality: Alembic migrations, pytest backend coverage, and GitHub Actions CI
 
 ## Engineering Highlights
@@ -24,19 +30,22 @@ The app is designed for sales managers and team leads who need a repeatable way 
 - Asynchronous transcription flow: the backend tracks call state through `created`, `transcribing`, `transcribed`, `analyzing`, `analyzed`, and `failed` transitions.
 - Idempotent analysis: repeated analysis requests return the existing scorecard instead of duplicating or overwriting model output.
 - Structured AI output: prompts require a strict JSON shape, responses are parsed into Pydantic models, and normalized fields plus raw model output are stored in PostgreSQL.
+- High-ticket psychology scoring: analysis includes trust, pain depth, consequence awareness, urgency, decision clarity, money readiness, resistance management, better questions, and objection psychology.
 - Privacy-oriented deletion: `DELETE /calls/{id}` removes the call, cascades its analysis record, and deletes linked S3/Transcribe artifacts when present.
 - Migration-backed schema: Alembic defines the backend schema and the backend container runs migrations before starting Uvicorn.
 - CI validation: GitHub Actions runs backend migrations/tests and frontend type/build checks.
 - Analytics-oriented persistence: call analysis data uses JSONB for nested score categories, objections, buying signals, notes, and follow-up artifacts while keeping primary entities relational.
 - Local development fallback: `MOCK_AI=true` lets the full UI and API workflow run without a live model key.
+- AWS-backed public demo: the deployed API runs FastAPI through Mangum on Lambda, persists to private RDS PostgreSQL, and uses an S3 bucket for presigned audio uploads.
 
 ## Architecture
 
 - [Architecture overview](docs/architecture.md)
 - [Architecture decision records](docs/adrs/README.md)
+- [Revenue use cases](docs/revenue-use-cases.md)
 - [Privacy and security notes](docs/privacy-and-security.md)
 
-At a high level, the browser talks to a REST API, the API owns persistence and integrations, and external AI/audio services are isolated behind backend service classes. Local review uses a three-container Docker Compose stack; frontend static hosting is configured for Cloudflare Pages.
+At a high level, the browser talks to a REST API, the API owns persistence and integrations, and external AI/audio services are isolated behind backend service classes. Local review uses a three-container Docker Compose stack; the public demo uses Cloudflare Pages plus AWS API Gateway, Lambda, RDS, S3, and Transcribe.
 
 ## Local Setup
 
@@ -94,13 +103,17 @@ backend/
     services/     GLM analysis and AWS transcription integrations
     models/       SQLAlchemy entities
     schemas/      Pydantic request/response and AI result models
+    lambda_handler.py  Mangum adapter for AWS Lambda
+    migration_handler.py  One-off Lambda schema migration helper
   tests/         Backend API and lifecycle tests
 frontend/
-  pages/          Next.js pages for dashboard, reps, call creation, and call detail
+  pages/          Next.js pages for sales page, dashboard, practice lab, reps, call creation, and call detail
+  public/         Product preview assets for public-facing pages
   components/     Shared UI components
 docs/
   architecture.md
   privacy-and-security.md
+  revenue-use-cases.md
   adrs/
 .github/
   workflows/ci.yml
@@ -112,9 +125,11 @@ docker-compose.yml
 The repository supports two deployment shapes:
 
 - Local review: Docker Compose runs the Next.js frontend, FastAPI backend, and PostgreSQL database.
-- Static frontend hosting: `frontend/next.config.js` exports the Next.js app as static files, and `frontend/wrangler.toml` configures Cloudflare Pages output to `frontend/out`.
+- Public demo: Cloudflare Pages serves the static frontend at `https://revenue-coach-ai.pages.dev`, and AWS API Gateway serves the FastAPI backend at `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
 
-The backend remains a separate service and must be deployed where it can reach PostgreSQL, AWS, and Z.AI. Terraform/ECS configuration, managed secrets, and production CORS policy are not implemented in this repo yet.
+The AWS backend uses Lambda with `backend/app/lambda_handler.py`, private RDS PostgreSQL, an S3 audio bucket, and VPC endpoints for S3 and Transcribe. The deployed demo uses `MOCK_AI=true`; model-backed analysis requires setting `ZAI_API_KEY` in the backend runtime.
+
+Infrastructure-as-code, managed secret rotation, custom domains, authentication, and a production CORS allowlist are not implemented in this repo yet.
 
 ## Cloudflare Pages Deployment
 
@@ -125,15 +140,17 @@ The frontend is configured for static hosting on Cloudflare Pages.
 3. Set the build command to `npm run build`.
 4. Set the build output directory to `frontend/out`.
 5. Set the root directory to `frontend`.
-6. Add `NEXT_PUBLIC_API_URL` and point it to the deployed FastAPI backend.
+6. Add `NEXT_PUBLIC_API_URL` and point it to the deployed FastAPI backend. The current public demo uses `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
 7. Deploy from `master`.
 
 ## Known Constraints
 
 - No authentication or role-based access control is implemented.
+- The public demo uses deterministic mock AI output so it can be reviewed without a paid model key.
 - The backend still creates missing tables on startup as a local-development fallback, even though Alembic migrations are now present.
 - CORS is open for development.
-- Audio processing depends on external AWS S3 and Transcribe configuration that is not provisioned by this repository.
+- The public AWS transcript workflow is smoke-tested end to end; full audio transcription depends on uploading valid audio and waiting for Amazon Transcribe completion.
+- AWS resources were provisioned outside this repository; Terraform/CDK is a follow-up.
 - No screenshots are currently committed.
 
 ## Roadmap
@@ -141,5 +158,5 @@ The frontend is configured for static hosting on Cloudflare Pages.
 - [x] Phase 1: Transcript-only analysis MVP
 - [x] Phase 2: Product UX polish and executive dashboard
 - [x] Phase 3: Audio pipeline with S3 and Amazon Transcribe
-- [ ] Phase 4: Production deployment with Terraform and ECS Fargate
+- [ ] Phase 4: Codify AWS deployment with Terraform or CDK, managed secrets, auth, and stricter CORS
 - [ ] Phase 5: Rep-specific analytics and historical trend lines

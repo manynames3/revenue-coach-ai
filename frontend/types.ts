@@ -28,21 +28,21 @@ export interface Call {
   analyzed_at: string | null;
   created_at: string;
   updated_at: string | null;
-  analysis?: Analysis;
+  analysis?: Analysis | null;
 }
 
 export interface Analysis {
   id: string;
   call_id: string;
-  overall_score: number;
-  summary: string;
+  overall_score: number | null;
+  summary: string | null;
   scores: {
     rapport: number;
     discovery: number;
     objection_handling: number;
     closing: number;
     follow_up: number;
-  };
+  } | null;
   strengths: string[];
   missed_opportunities: string[];
   objections: Array<{
@@ -57,13 +57,49 @@ export interface Analysis {
     why_it_matters: string;
   }>;
   manager_notes: string[];
-  coaching_drill: string;
-  follow_up_sms: string;
+  coaching_drill: string | null;
+  follow_up_sms: string | null;
   follow_up_email: {
     subject: string;
     body: string;
+  } | null;
+  sales_psychology?: SalesPsychology | null;
+  created_at: string | null;
+}
+
+export interface SalesPsychology {
+  trust_level: string;
+  pain_depth: string;
+  urgency_level: string;
+  decision_clarity: string;
+  money_readiness: string;
+  resistance_created: string;
+  close_probability: string;
+  emotional_driver: string;
+  primary_blocker: string;
+  scores: {
+    trust_and_safety: number;
+    problem_clarity: number;
+    emotional_depth: number;
+    consequence_awareness: number;
+    decision_clarity: number;
+    money_readiness: number;
+    urgency: number;
+    resistance_management: number;
   };
-  created_at: string;
+  better_questions: Array<{
+    category: string;
+    missed_moment: string;
+    suggested_question: string;
+    why_it_works: string;
+  }>;
+  objection_psychology: Array<{
+    objection_type: string;
+    buyer_language: string;
+    underlying_concern: string;
+    recommended_question: string;
+  }>;
+  next_call_strategy: string;
 }
 
 export interface UploadUrlResponse {

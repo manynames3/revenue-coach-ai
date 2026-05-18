@@ -54,6 +54,9 @@ def test_transcript_call_analysis_is_stateful_and_idempotent():
         assert first_analysis.status_code == 200
         first_payload = first_analysis.json()
         assert first_payload["overall_score"] == 72
+        assert first_payload["sales_psychology"]["pain_depth"] == "moderate"
+        assert first_payload["sales_psychology"]["scores"]["money_readiness"] == 60
+        assert first_payload["sales_psychology"]["better_questions"][0]["category"] == "problem"
 
         second_analysis = client.post(f"/calls/{call_id}/analyze")
         assert second_analysis.status_code == 200
@@ -65,6 +68,7 @@ def test_transcript_call_analysis_is_stateful_and_idempotent():
         assert detail_payload["status"] == "analyzed"
         assert detail_payload["analysis_retry_count"] == 1
         assert detail_payload["analysis"]["id"] == first_payload["id"]
+        assert detail_payload["analysis"]["sales_psychology"]["primary_blocker"]
 
 
 def test_audio_transcription_flow_updates_status_and_delete_removes_artifacts(monkeypatch):

@@ -42,12 +42,22 @@ Decision: Call GLM 5.1 through the OpenAI Python SDK compatible interface, promp
 
 Consequences: Provider access is isolated behind a small service class and local development remains usable. The tradeoff is that JSON validity depends on prompting and parsing instead of provider-enforced schemas.
 
-## ADR 5: Optimize the Repository for Local Review Before Backend Infrastructure
+## ADR 5: Use Serverless AWS for the Public Demo
 
 Status: Accepted
 
-Context: This project is meant to be easy for technical reviewers to inspect and run. Full backend infrastructure would add a lot of configuration before the core product and architecture are clear, while the frontend can be statically hosted.
+Context: This project is meant to be easy for technical reviewers to inspect and run, but a recruiter-facing README also benefits from a public URL that exercises the real backend API. The backend already has a clean FastAPI/PostgreSQL boundary, and local Docker is not required for AWS Lambda packaging.
 
-Decision: Use Docker Compose for the reviewable runtime, Alembic for the backend schema, a startup table-creation fallback for local development, and Cloudflare Pages static export for frontend hosting.
+Decision: Keep Docker Compose as the local review runtime, export the frontend to Cloudflare Pages, and deploy the FastAPI app to AWS API Gateway plus Lambda using Mangum. Use private RDS PostgreSQL for persistence and an S3 bucket for audio uploads.
 
-Consequences: Reviewers can run the app with a small local setup, and the frontend has a simple static deployment path. Production backend concerns remain explicit follow-up work: auth, tighter CORS, managed secrets, infrastructure provisioning, and production-grade process management.
+Consequences: Reviewers can click through the app and inspect a backend that uses the same FastAPI routes and SQLAlchemy models as local development. The tradeoff is that Lambda cold starts, mock AI configuration, and manually provisioned AWS resources are acceptable for a demo but should be replaced with managed secrets, stricter CORS, authentication, and Terraform/CDK before production use.
+
+## ADR 6: Add Question-Led Sales Psychology as Structured Output
+
+Status: Accepted
+
+Context: High-ticket sales coaching needs more than a generic performance score. Managers need to know whether the rep uncovered emotional motivation, consequence of inaction, decision criteria, money readiness, and resistance created by the rep's approach.
+
+Decision: Extend the AI response schema with a structured `sales_psychology` object. Store it as JSONB, validate it with Pydantic, and render it as a dedicated scorecard panel with better questions, objection psychology, and next-call strategy.
+
+Consequences: The product becomes more useful for high-ticket closers and sales coaches without hard-coding a proprietary script. The tradeoff is a larger AI contract that needs prompt discipline, tests, and versioned migrations as the rubric evolves.

@@ -23,6 +23,7 @@ from app.schemas.call_analysis import (
     FollowUpEmail,
     Objection,
     ScoreBreakdown,
+    SalesPsychology,
 )
 from app.services.sales_analyzer import SalesAnalyzer
 from app.services.transcription import TranscriptionService
@@ -200,6 +201,7 @@ def analyze_call(call_id: str, db: Session = Depends(get_db)):
         objections=[o.model_dump() for o in result.objections],
         buying_signals=[b.model_dump() for b in result.buying_signals],
         manager_notes=result.manager_notes,
+        sales_psychology=result.sales_psychology.model_dump(),
         coaching_drill=result.coaching_drill,
         follow_up_sms=result.follow_up_sms,
         follow_up_email_subject=result.follow_up_email.subject,
@@ -251,6 +253,7 @@ def _analysis_to_out(a: CallAnalysis) -> AnalysisOut:
         objections=[Objection(**o) for o in a.objections] if a.objections else [],
         buying_signals=[BuyingSignal(**b) for b in a.buying_signals] if a.buying_signals else [],
         manager_notes=a.manager_notes or [],
+        sales_psychology=SalesPsychology(**a.sales_psychology) if a.sales_psychology else None,
         coaching_drill=a.coaching_drill,
         follow_up_sms=a.follow_up_sms,
         follow_up_email=email,

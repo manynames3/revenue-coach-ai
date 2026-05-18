@@ -1,11 +1,24 @@
 import type { AppProps } from "next/app";
+import type { NextPage } from "next";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import "../styles/globals.css";
 
-export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <Layout>
-      <Component {...pageProps} />
-    </Layout>
-  );
+type PageWithShellOption = NextPage & {
+  noAppShell?: boolean;
+};
+
+type AppPropsWithShellOption = AppProps & {
+  Component: PageWithShellOption;
+};
+
+export default function App({ Component, pageProps }: AppPropsWithShellOption) {
+  const router = useRouter();
+  const page = <Component {...pageProps} />;
+
+  if (Component.noAppShell || router.pathname === "/sales") {
+    return page;
+  }
+
+  return <Layout>{page}</Layout>;
 }

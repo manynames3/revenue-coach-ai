@@ -6,3 +6,5 @@ node_modules/
 .env
 *.egg-info/
 .pytest_cache/
+.wrangler/
+out/

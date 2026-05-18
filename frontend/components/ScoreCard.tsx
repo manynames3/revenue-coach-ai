@@ -1,238 +1,384 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  BarChart3,
+  Brain,
+  CheckCircle2,
+  Clipboard,
+  Mail,
+  MessageSquareText,
+  ShieldQuestion,
+  Target,
+} from "lucide-react";
+import type { Analysis, SalesPsychology } from "../types";
 
-interface Scores {
-  rapport?: number;
-  discovery?: number;
-  objection_handling?: number;
-  closing?: number;
-  follow_up?: number;
+type TabKey = "overview" | "psychology" | "objections" | "followup";
+
+const tabs: Array<{ key: TabKey; label: string; icon: typeof BarChart3 }> = [
+  { key: "overview", label: "Overview", icon: BarChart3 },
+  { key: "psychology", label: "Psychology", icon: Brain },
+  { key: "objections", label: "Objections", icon: ShieldQuestion },
+  { key: "followup", label: "Follow-up", icon: Mail },
+];
+
+function formatLabel(label: string) {
+  return label.replace(/_/g, " ");
 }
 
-interface Objection {
-  type: string;
-  customer_quote: string;
-  rep_response_quality: string;
-  better_response: string;
+function formatScore(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  return `${Math.round(value)}%`;
 }
 
-interface BuyingSignal {
-  signal: string;
-  strength: string;
-  why_it_matters: string;
-}
-
-interface Analysis {
-  id: string;
-  overall_score: number | null;
-  summary: string | null;
-  scores: Scores | null;
-  strengths: string[];
-  missed_opportunities: string[];
-  objections: Objection[];
-  buying_signals: BuyingSignal[];
-  manager_notes: string[];
-  coaching_drill: string | null;
-  follow_up_sms: string | null;
-  follow_up_email: { subject: string; body: string } | null;
-  created_at: string | null;
+function scoreColor(value: number) {
+  if (value >= 80) return "bg-emerald-500";
+  if (value >= 60) return "bg-amber-500";
+  return "bg-rose-500";
 }
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
-  const color = value >= 80 ? "bg-green-500" : value >= 60 ? "bg-yellow-500" : "bg-red-500";
-  const textColor = value >= 80 ? "text-green-700" : value >= 60 ? "text-yellow-700" : "text-red-700";
-  
   return (
-    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-bold uppercase tracking-wider text-gray-500">{label.replace(/_/g, " ")}</span>
-        <span className={`text-sm font-black ${textColor}`}>{value}%</span>
+    <div className="rounded-md border border-slate-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="truncate text-xs font-black uppercase text-slate-500">{formatLabel(label)}</span>
+        <span className="text-sm font-black text-slate-950">{formatScore(value)}</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-1000 ${color}`} 
-          style={{ width: `${value}%` }}
-        ></div>
+      <div className="h-2 overflow-hidden rounded bg-slate-100">
+        <div className={`h-full ${scoreColor(value)}`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
       </div>
     </div>
   );
 }
 
-export default function ScoreCard({ analysis }: { analysis: Analysis }) {
+function LevelPill({ label, value }: { label: string; value: string }) {
+  const normalized = value.toLowerCase();
+  const color =
+    normalized.includes("low") || normalized.includes("surface") || normalized.includes("unclear")
+      ? "bg-rose-50 text-rose-700 border-rose-200"
+      : normalized.includes("high") || normalized.includes("deep") || normalized === "clear"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
+
   return (
-    <div className="space-y-8">
-      {/* Header Summary */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-1/3 bg-blue-600 p-8 text-white flex flex-col justify-center items-center text-center">
-            <span className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">AI Performance Score</span>
-            <div className="text-7xl font-black mb-2">{analysis.overall_score ?? "—"}</div>
-            <div className="bg-white/20 px-4 py-1 rounded-full text-sm font-medium">
-              {analysis.overall_score && analysis.overall_score >= 80 ? "Excellent" : analysis.overall_score && analysis.overall_score >= 60 ? "Average" : "Needs Work"}
-            </div>
-          </div>
-          <div className="md:w-2/3 p-8">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-tight mb-3 flex items-center">
-              <span className="mr-2">🧠</span> Executive Summary
-            </h3>
-            <p className="text-lg text-gray-800 leading-relaxed font-medium">
-              {analysis.summary}
-            </p>
-          </div>
+    <div>
+      <p className="mb-1 text-[10px] font-black uppercase text-slate-400">{label}</p>
+      <span className={`inline-flex max-w-full rounded-md border px-2 py-1 text-xs font-black uppercase ${color}`}>
+        {value || "unknown"}
+      </span>
+    </div>
+  );
+}
+
+function SectionHeader({
+  title,
+  eyebrow,
+  icon: Icon,
+}: {
+  title: string;
+  eyebrow?: string;
+  icon: typeof BarChart3;
+}) {
+  return (
+    <div className="mb-4 flex items-start gap-3">
+      <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <div>
+        {eyebrow && <p className="text-xs font-black uppercase text-blue-700">{eyebrow}</p>}
+        <h3 className="text-lg font-black text-slate-950">{title}</h3>
+      </div>
+    </div>
+  );
+}
+
+function EmptyPanel({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">{text}</div>
+  );
+}
+
+function PsychologySummary({ psychology }: { psychology: SalesPsychology }) {
+  const scoreEntries = Object.entries(psychology.scores || {});
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <LevelPill label="Trust" value={psychology.trust_level} />
+        <LevelPill label="Pain" value={psychology.pain_depth} />
+        <LevelPill label="Urgency" value={psychology.urgency_level} />
+        <LevelPill label="Close odds" value={psychology.close_probability} />
+        <LevelPill label="Decision" value={psychology.decision_clarity} />
+        <LevelPill label="Money" value={psychology.money_readiness} />
+        <LevelPill label="Resistance" value={psychology.resistance_created} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-xs font-black uppercase text-blue-700">Emotional driver</p>
+          <p className="mt-2 text-sm leading-6 text-blue-950">
+            {psychology.emotional_driver || "Not enough buyer signal in the transcript."}
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs font-black uppercase text-amber-700">Primary blocker</p>
+          <p className="mt-2 text-sm leading-6 text-amber-950">{psychology.primary_blocker || "No clear blocker detected."}</p>
         </div>
       </div>
 
-      {/* Grid for Scores and Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Category Scores */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2 text-blue-500">📊</span> Metrics breakdown
-            </h3>
-            <div className="space-y-3">
-              {analysis.scores && Object.entries(analysis.scores).map(([key, val]) => (
-                <ScoreBar key={key} label={key} value={val ?? 0} />
-              ))}
-            </div>
-          </div>
-
-          {analysis.coaching_drill && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100 p-6">
-              <h3 className="text-lg font-bold text-blue-900 mb-2 flex items-center">
-                <span className="mr-2">🎯</span> Suggested Drill
-              </h3>
-              <p className="text-blue-800 text-sm leading-relaxed font-medium">
-                {analysis.coaching_drill}
-              </p>
-            </div>
-          )}
+      {scoreEntries.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {scoreEntries.map(([key, value]) => (
+            <ScoreBar key={key} label={key} value={value ?? 0} />
+          ))}
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Center & Right Column: Highlights, Objections, Signals */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Strengths & Missed Opportunities */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-green-50 rounded-2xl border border-green-100 p-6">
-              <h3 className="font-bold text-green-900 mb-4 flex items-center uppercase text-xs tracking-widest">
-                <span className="mr-2">✅</span> What went well
-              </h3>
-              <ul className="space-y-3">
-                {analysis.strengths.map((s, i) => (
-                  <li key={i} className="text-sm text-green-800 flex items-start">
-                    <span className="mr-2 mt-1 block w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
+function PsychologyTab({ psychology }: { psychology?: SalesPsychology | null }) {
+  if (!psychology) {
+    return <EmptyPanel text="This analysis was created before the sales psychology rubric was added." />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <PsychologySummary psychology={psychology} />
+
+      {psychology.better_questions.length > 0 && (
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
+          <SectionHeader title="Better questions to ask" eyebrow="Coaching plan" icon={MessageSquareText} />
+          <div className="space-y-3">
+            {psychology.better_questions.map((question, index) => (
+              <div key={index} className="rounded-lg border border-slate-200 p-4">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-slate-950 px-2 py-1 text-[10px] font-black uppercase text-white">
+                    {question.category}
+                  </span>
+                  <span className="text-xs font-medium text-slate-500">{question.missed_moment}</span>
+                </div>
+                <p className="text-base font-black leading-6 text-slate-950">"{question.suggested_question}"</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{question.why_it_works}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {psychology.next_call_strategy && (
+        <section className="rounded-lg bg-slate-950 p-5 text-white">
+          <p className="text-xs font-black uppercase text-blue-200">Next-call strategy</p>
+          <p className="mt-2 text-sm leading-6 text-slate-100">{psychology.next_call_strategy}</p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+export default function ScoreCard({ analysis }: { analysis: Analysis }) {
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+
+  const sortedScores = useMemo(() => Object.entries(analysis.scores || {}), [analysis.scores]);
+  const score = analysis.overall_score ?? 0;
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <div className="grid gap-0 lg:grid-cols-[260px_1fr]">
+          <div className="border-b border-slate-200 bg-slate-950 p-6 text-white lg:border-b-0 lg:border-r">
+            <p className="text-xs font-black uppercase text-blue-200">Performance score</p>
+            <div className="mt-3 flex items-end gap-2">
+              <span className="text-6xl font-black">{analysis.overall_score ?? "-"}</span>
+              <span className="pb-2 text-sm font-bold text-slate-300">/ 100</span>
             </div>
-            <div className="bg-orange-50 rounded-2xl border border-orange-100 p-6">
-              <h3 className="font-bold text-orange-900 mb-4 flex items-center uppercase text-xs tracking-widest">
-                <span className="mr-2">⚠️</span> Needs improvement
-              </h3>
-              <ul className="space-y-3">
-                {analysis.missed_opportunities.map((m, i) => (
-                  <li key={i} className="text-sm text-orange-800 flex items-start">
-                    <span className="mr-2 mt-1 block w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
-                    {m}
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-4 h-2 overflow-hidden rounded bg-white/15">
+              <div className={`h-full ${scoreColor(score)}`} style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
             </div>
           </div>
 
-          {/* Objections */}
-          {analysis.objections.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-900 flex items-center uppercase text-xs tracking-widest">
-                <span className="mr-2 text-red-500">🛡️</span> Key Objections Handled
+          <div className="p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase text-blue-700">Executive summary</p>
+                <p className="mt-2 max-w-3xl text-base font-medium leading-7 text-slate-700">
+                  {analysis.summary || "No summary returned for this call."}
+                </p>
               </div>
-              <div className="p-0 divide-y divide-gray-100">
-                {analysis.objections.map((o, i) => (
-                  <div key={i} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="bg-red-100 text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-tighter">
-                        {o.type}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase ${o.rep_response_quality === 'good' ? 'text-green-600' : 'text-orange-500'}`}>
-                        Rep Response: {o.rep_response_quality}
-                      </span>
-                    </div>
-                    <p className="text-gray-900 font-bold mb-2">"{o.customer_quote}"</p>
-                    <div className="bg-blue-50 border-l-2 border-blue-400 p-3 text-sm text-blue-900 italic">
-                      <span className="font-bold not-italic text-blue-600 block text-[10px] uppercase mb-1">Coach Recommendation:</span>
-                      {o.better_response}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Buying Signals */}
-          {analysis.buying_signals.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-black text-gray-900 mb-4 flex items-center uppercase text-xs tracking-widest">
-                <span className="mr-2 text-green-500">💎</span> Buying Signals detected
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {analysis.buying_signals.map((b, i) => (
-                  <div key={i} className="bg-gray-50 border border-gray-100 p-4 rounded-xl">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${b.strength === 'strong' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800'}`}>
-                        {b.strength}
-                      </span>
-                    </div>
-                    <p className="font-bold text-gray-900 text-sm mb-1">{b.signal}</p>
-                    <p className="text-xs text-gray-500 leading-tight">{b.why_it_matters}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Follow-up Assets */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {analysis.follow_up_sms && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-900 uppercase text-xs tracking-widest flex items-center">
-                    <span className="mr-2">📱</span> Ready SMS
-                  </h3>
-                  <button 
-                    onClick={() => navigator.clipboard.writeText(analysis.follow_up_sms || "")}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase"
-                  >
-                    Copy
-                  </button>
+              {analysis.sales_psychology && (
+                <div className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Close odds</p>
+                  <p className="mt-1 text-lg font-black capitalize text-slate-950">
+                    {analysis.sales_psychology.close_probability || "unknown"}
+                  </p>
                 </div>
-                <div className="bg-gray-100 p-4 rounded-xl text-sm text-gray-800 font-medium">
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex gap-2 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-black transition-colors ${
+                active ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <SectionHeader title="Core sales metrics" icon={BarChart3} />
+            <div className="space-y-3">
+              {sortedScores.length > 0 ? (
+                sortedScores.map(([key, value]) => <ScoreBar key={key} label={key} value={value ?? 0} />)
+              ) : (
+                <EmptyPanel text="No metric breakdown returned." />
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 xl:col-span-2">
+            <SectionHeader title="Coaching notes" icon={Target} />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <p className="mb-3 text-xs font-black uppercase text-emerald-700">What worked</p>
+                <ul className="space-y-2">
+                  {analysis.strengths.map((item, index) => (
+                    <li key={index} className="flex gap-2 text-sm leading-6 text-slate-700">
+                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-black uppercase text-amber-700">Improve next</p>
+                <ul className="space-y-2">
+                  {analysis.missed_opportunities.map((item, index) => (
+                    <li key={index} className="flex gap-2 text-sm leading-6 text-slate-700">
+                      <AlertCircle className="mt-1 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {analysis.coaching_drill && (
+              <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-xs font-black uppercase text-blue-700">Suggested drill</p>
+                <p className="mt-2 text-sm leading-6 text-blue-950">{analysis.coaching_drill}</p>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {activeTab === "psychology" && <PsychologyTab psychology={analysis.sales_psychology} />}
+
+      {activeTab === "objections" && (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <SectionHeader title="Objections handled" icon={ShieldQuestion} />
+            {analysis.objections.length === 0 ? (
+              <EmptyPanel text="No explicit objections detected." />
+            ) : (
+              <div className="space-y-3">
+                {analysis.objections.map((objection, index) => (
+                  <div key={index} className="rounded-lg border border-slate-200 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <span className="rounded-md bg-rose-50 px-2 py-1 text-[10px] font-black uppercase text-rose-700">
+                        {objection.type}
+                      </span>
+                      <span className="text-xs font-black uppercase text-slate-500">{objection.rep_response_quality}</span>
+                    </div>
+                    <p className="text-sm font-black text-slate-950">"{objection.customer_quote}"</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">{objection.better_response}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <SectionHeader title="Underlying concerns" icon={Brain} />
+            {analysis.sales_psychology?.objection_psychology?.length ? (
+              <div className="space-y-3">
+                {analysis.sales_psychology.objection_psychology.map((objection, index) => (
+                  <div key={index} className="rounded-lg border border-slate-200 p-4">
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black uppercase text-slate-700">
+                      {formatLabel(objection.objection_type)}
+                    </span>
+                    <p className="mt-3 text-sm font-black text-slate-950">"{objection.buyer_language}"</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{objection.underlying_concern}</p>
+                    <p className="mt-3 text-sm font-bold leading-6 text-blue-700">{objection.recommended_question}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyPanel text="No objection psychology returned for this scorecard." />
+            )}
+          </section>
+        </div>
+      )}
+
+      {activeTab === "followup" && (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <SectionHeader title="Follow-up SMS" icon={MessageSquareText} />
+            {analysis.follow_up_sms ? (
+              <>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
                   {analysis.follow_up_sms}
                 </div>
-              </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(analysis.follow_up_sms || "")}
+                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  <Clipboard className="h-4 w-4" aria-hidden="true" />
+                  Copy SMS
+                </button>
+              </>
+            ) : (
+              <EmptyPanel text="No SMS draft returned." />
             )}
-            
-            {analysis.follow_up_email && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-900 uppercase text-xs tracking-widest flex items-center">
-                    <span className="mr-2">📧</span> Draft Email
-                  </h3>
-                  <button 
-                    onClick={() => navigator.clipboard.writeText(analysis.follow_up_email?.body || "")}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Subject: {analysis.follow_up_email.subject}</p>
-                <div className="bg-gray-100 p-4 rounded-xl text-xs text-gray-800 font-medium line-clamp-4 overflow-hidden">
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <SectionHeader title="Follow-up email" icon={Mail} />
+            {analysis.follow_up_email ? (
+              <>
+                <p className="text-xs font-black uppercase text-slate-500">Subject</p>
+                <p className="mt-1 text-sm font-black text-slate-950">{analysis.follow_up_email.subject}</p>
+                <div className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
                   {analysis.follow_up_email.body}
                 </div>
-              </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(analysis.follow_up_email?.body || "")}
+                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  <Clipboard className="h-4 w-4" aria-hidden="true" />
+                  Copy email
+                </button>
+              </>
+            ) : (
+              <EmptyPanel text="No email draft returned." />
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      )}
     </div>
   );
 }
