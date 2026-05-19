@@ -20,6 +20,7 @@ from app.schemas.call_analysis import (
     AIAnalysisResult,
     AnalysisOut,
     BuyingSignal,
+    EvidenceItem,
     FollowUpEmail,
     Objection,
     ScoreBreakdown,
@@ -27,6 +28,7 @@ from app.schemas.call_analysis import (
 )
 from app.services.sales_analyzer import SalesAnalyzer
 from app.services.transcription import TranscriptionService
+from app.models.organization import Organization
 
 router = APIRouter(prefix="/calls", tags=["calls"])
 
@@ -183,8 +185,11 @@ def analyze_call(call_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     analyzer = SalesAnalyzer()
+    organization = db.query(Organization).filter(Organization.id == call.organization_id).first()
     try:
-        result: AIAnalysisResult = analyzer.analyze(call.transcript)
+        result: AIAnalysisResult = analyzer.analyze(
+            call.transcript, organization.coaching_framework if organization else None
+        )
     except Exception as exc:
         call.status = CallStatus.FAILED.value
         call.failure_reason = f"Analysis failed: {exc}"
@@ -201,6 +206,7 @@ def analyze_call(call_id: str, db: Session = Depends(get_db)):
         objections=[o.model_dump() for o in result.objections],
         buying_signals=[b.model_dump() for b in result.buying_signals],
         manager_notes=result.manager_notes,
+        evidence=[e.model_dump() for e in result.evidence],
         sales_psychology=result.sales_psychology.model_dump(),
         coaching_drill=result.coaching_drill,
         follow_up_sms=result.follow_up_sms,
@@ -253,6 +259,7 @@ def _analysis_to_out(a: CallAnalysis) -> AnalysisOut:
         objections=[Objection(**o) for o in a.objections] if a.objections else [],
         buying_signals=[BuyingSignal(**b) for b in a.buying_signals] if a.buying_signals else [],
         manager_notes=a.manager_notes or [],
+        evidence=[EvidenceItem(**e) for e in a.evidence] if a.evidence else [],
         sales_psychology=SalesPsychology(**a.sales_psychology) if a.sales_psychology else None,
         coaching_drill=a.coaching_drill,
         follow_up_sms=a.follow_up_sms,

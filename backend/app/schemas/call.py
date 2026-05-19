@@ -14,6 +14,8 @@ class CallCreate(BaseModel):
     call_type: str | None = None
     outcome: str | None = None
     transcript: str | None = None
+    consent_confirmed: bool = False
+    consent_notes: str | None = None
 
 
 class CallOut(BaseModel):
@@ -25,6 +27,8 @@ class CallOut(BaseModel):
     call_type: str | None = None
     outcome: str | None = None
     transcript: str | None = None
+    consent_confirmed: bool = False
+    consent_notes: str | None = None
     audio_s3_key: str | None = None
     transcription_job_id: str | None = None
     status: CallStatus = CallStatus.CREATED

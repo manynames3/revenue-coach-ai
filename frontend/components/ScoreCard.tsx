@@ -5,6 +5,7 @@ import {
   Brain,
   CheckCircle2,
   Clipboard,
+  FileText,
   Mail,
   MessageSquareText,
   ShieldQuestion,
@@ -12,10 +13,11 @@ import {
 } from "lucide-react";
 import type { Analysis, SalesPsychology } from "../types";
 
-type TabKey = "overview" | "psychology" | "objections" | "followup";
+type TabKey = "overview" | "evidence" | "psychology" | "objections" | "followup";
 
 const tabs: Array<{ key: TabKey; label: string; icon: typeof BarChart3 }> = [
   { key: "overview", label: "Overview", icon: BarChart3 },
+  { key: "evidence", label: "Evidence", icon: FileText },
   { key: "psychology", label: "Psychology", icon: Brain },
   { key: "objections", label: "Objections", icon: ShieldQuestion },
   { key: "followup", label: "Follow-up", icon: Mail },
@@ -284,6 +286,42 @@ export default function ScoreCard({ analysis }: { analysis: Analysis }) {
             )}
           </section>
         </div>
+      )}
+
+      {activeTab === "evidence" && (
+        <section className="rounded-lg border border-slate-200 bg-white p-5">
+          <SectionHeader title="Transcript evidence" eyebrow="Why the score changed" icon={FileText} />
+          {analysis.evidence?.length ? (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {analysis.evidence.map((item, index) => (
+                <div key={`${item.quote}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-slate-950 px-2 py-1 text-[10px] font-black uppercase text-white">
+                      {formatLabel(item.category || "evidence")}
+                    </span>
+                    {item.score_area && (
+                      <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-black uppercase text-blue-700">
+                        {formatLabel(item.score_area)}
+                      </span>
+                    )}
+                    {item.timestamp && <span className="text-xs font-bold text-slate-500">{item.timestamp}</span>}
+                  </div>
+                  {item.quote ? (
+                    <blockquote className="border-l-4 border-blue-300 pl-3 text-sm font-bold leading-6 text-slate-950">
+                      "{item.quote}"
+                    </blockquote>
+                  ) : (
+                    <p className="text-sm font-bold text-slate-500">No exact quote returned.</p>
+                  )}
+                  <p className="mt-3 text-xs font-black uppercase text-slate-400">{item.speaker || "unknown speaker"}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.coaching_point}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel text="Evidence-backed excerpts will appear for newly generated scorecards." />
+          )}
+        </section>
       )}
 
       {activeTab === "psychology" && <PsychologyTab psychology={analysis.sales_psychology} />}

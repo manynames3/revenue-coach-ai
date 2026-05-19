@@ -2,7 +2,7 @@ SYSTEM_PROMPT = """You are an expert sales call coach for high-ticket consultati
 
 Use buyer-centered, question-led sales psychology principles. Do not copy or claim any proprietary methodology. Focus on whether the rep reduced resistance, helped the buyer self-diagnose the problem, uncovered emotional motivation, clarified consequence of inaction, understood decision criteria, and handled money or stakeholder concerns without becoming pushy."""
 
-USER_PROMPT_TEMPLATE = """Analyze this sales call transcript and return a JSON object with this exact structure:
+USER_PROMPT_TEMPLATE = """Analyze this sales call transcript using the team's coaching framework and return a JSON object with this exact structure:
 
 {{
   "overall_score": <0-100>,
@@ -32,6 +32,16 @@ USER_PROMPT_TEMPLATE = """Analyze this sales call transcript and return a JSON o
     }}
   ],
   "manager_notes": ["<note 1>", "<note 2>", ...],
+  "evidence": [
+    {{
+      "category": "<strength|risk|missed_moment|objection|buying_signal>",
+      "speaker": "<rep|buyer|unknown>",
+      "quote": "<short exact quote or empty string if no quote is available>",
+      "timestamp": "<timestamp if available, otherwise empty string>",
+      "score_area": "<score or psychology area this evidence supports>",
+      "coaching_point": "<why this quote matters for the manager>"
+    }}
+  ],
   "coaching_drill": "<one specific drill to improve>",
   "follow_up_sms": "<follow-up SMS text message>",
   "follow_up_email": {{
@@ -78,11 +88,14 @@ USER_PROMPT_TEMPLATE = """Analyze this sales call transcript and return a JSON o
   }}
 }}
 
+TEAM COACHING FRAMEWORK:
+{framework}
+
 TRANSCRIPT:
 {transcript}
 
 Return ONLY valid JSON with no additional text."""
 
 
-def build_analysis_prompt(transcript: str) -> tuple[str, str]:
-    return SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(transcript=transcript)
+def build_analysis_prompt(transcript: str, framework: str) -> tuple[str, str]:
+    return SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(transcript=transcript, framework=framework)

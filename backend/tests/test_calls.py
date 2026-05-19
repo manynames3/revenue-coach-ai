@@ -57,6 +57,8 @@ def test_transcript_call_analysis_is_stateful_and_idempotent():
         assert first_payload["sales_psychology"]["pain_depth"] == "moderate"
         assert first_payload["sales_psychology"]["scores"]["money_readiness"] == 60
         assert first_payload["sales_psychology"]["better_questions"][0]["category"] == "problem"
+        assert first_payload["evidence"][0]["score_area"] == "money_readiness"
+        assert "price concern" in first_payload["evidence"][0]["coaching_point"].lower()
 
         second_analysis = client.post(f"/calls/{call_id}/analyze")
         assert second_analysis.status_code == 200
@@ -69,6 +71,7 @@ def test_transcript_call_analysis_is_stateful_and_idempotent():
         assert detail_payload["analysis_retry_count"] == 1
         assert detail_payload["analysis"]["id"] == first_payload["id"]
         assert detail_payload["analysis"]["sales_psychology"]["primary_blocker"]
+        assert detail_payload["analysis"]["evidence"][1]["speaker"] == "rep"
 
 
 def test_audio_transcription_flow_updates_status_and_delete_removes_artifacts(monkeypatch):
@@ -152,3 +155,40 @@ def test_upload_url_rejects_non_audio_types():
         )
         assert response.status_code == 400
         assert "Unsupported audio type" in response.json()["detail"]
+
+
+def test_account_settings_update_framework_and_trust_controls():
+    reset_database()
+    with TestClient(app) as client:
+        initial = client.get("/account")
+        assert initial.status_code == 200
+        assert initial.json()["coaching_framework"]["name"] == "High-ticket revenue psychology"
+
+        update = client.patch(
+            "/account",
+            json={
+                "organization_name": "Pipeline Coaching Team",
+                "coaching_framework": {
+                    "name": "Enterprise discovery rubric",
+                    "description": "Coach deeper business pain and stakeholder clarity.",
+                    "principles": ["Find consequence before price", "Clarify the buying committee"],
+                    "score_categories": [
+                        {
+                            "key": "stakeholder_clarity",
+                            "label": "Stakeholder clarity",
+                            "description": "Decision path and influence map are known.",
+                            "weight": 25,
+                        }
+                    ],
+                },
+                "data_retention_days": 180,
+                "recording_consent_required": True,
+                "pii_redaction_enabled": True,
+            },
+        )
+        assert update.status_code == 200
+        payload = update.json()
+        assert payload["organization"]["name"] == "Pipeline Coaching Team"
+        assert payload["coaching_framework"]["score_categories"][0]["key"] == "stakeholder_clarity"
+        assert payload["trust_controls"]["data_retention_days"] == 180
+        assert payload["trust_controls"]["pii_redaction_enabled"] is True

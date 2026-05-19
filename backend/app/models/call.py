@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.call_status import CallStatus
@@ -23,6 +23,8 @@ class Call(Base):
     call_type: Mapped[str | None] = mapped_column(String, nullable=True)
     outcome: Mapped[str | None] = mapped_column(String, nullable=True)
     transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    consent_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    consent_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     audio_s3_key: Mapped[str | None] = mapped_column(String, nullable=True)
     transcription_job_id: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default=CallStatus.CREATED.value)

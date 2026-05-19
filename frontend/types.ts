@@ -16,6 +16,8 @@ export interface Call {
   call_type: string | null;
   outcome: string | null;
   transcript: string | null;
+  consent_confirmed: boolean;
+  consent_notes: string | null;
   audio_s3_key: string | null;
   transcription_job_id: string | null;
   status: "created" | "transcribing" | "transcribed" | "analyzing" | "analyzed" | "failed";
@@ -55,6 +57,14 @@ export interface Analysis {
     signal: string;
     strength: string;
     why_it_matters: string;
+  }>;
+  evidence: Array<{
+    category: string;
+    speaker: string;
+    quote: string;
+    timestamp: string;
+    score_area: string;
+    coaching_point: string;
   }>;
   manager_notes: string[];
   coaching_drill: string | null;
@@ -106,6 +116,46 @@ export interface UploadUrlResponse {
   url: string;
   fields: Record<string, string>;
   key: string;
+}
+
+export interface CoachingCategory {
+  key: string;
+  label: string;
+  description: string;
+  weight: number;
+}
+
+export interface CoachingFramework {
+  name: string;
+  description: string;
+  principles: string[];
+  score_categories: CoachingCategory[];
+}
+
+export interface TrustControls {
+  data_retention_days: number;
+  recording_consent_required: boolean;
+  pii_redaction_enabled: boolean;
+  audio_uploads_direct_to_s3: boolean;
+  delete_call_removes_audio_artifacts: boolean;
+  auth_mode: string;
+}
+
+export interface Account {
+  organization: {
+    id: string;
+    name: string;
+    created_at: string;
+  };
+  users: Array<{
+    id: string;
+    email: string;
+    role: string;
+    created_at: string;
+  }>;
+  reps: Rep[];
+  coaching_framework: CoachingFramework;
+  trust_controls: TrustControls;
 }
 
 export interface DashboardOverview {

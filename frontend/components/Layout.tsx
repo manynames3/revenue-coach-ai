@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BarChart3, FilePlus2, LayoutDashboard, Megaphone, PlayCircle, ShieldCheck, Target, Users } from "lucide-react";
+import { BarChart3, FilePlus2, LayoutDashboard, Megaphone, PlayCircle, Settings, ShieldCheck, Target, Users } from "lucide-react";
 
 const navigation = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const navigation = [
   { href: "/practice", label: "Practice Lab", icon: Target },
   { href: "/calls/new", label: "New Call", icon: FilePlus2 },
   { href: "/reps", label: "Reps", icon: Users },
+  { href: "/account", label: "Account", icon: Settings },
 ];
 
 function isActive(pathname: string, href: string) {

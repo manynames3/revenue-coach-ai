@@ -161,7 +161,14 @@ export default function CallDetail() {
               <span>
                 Created: <span className="font-bold text-slate-700">{new Date(call.created_at).toLocaleDateString()}</span>
               </span>
+              <span>
+                Consent:{" "}
+                <span className={call.consent_confirmed ? "font-bold text-emerald-700" : "font-bold text-amber-700"}>
+                  {call.consent_confirmed ? "confirmed" : "not confirmed"}
+                </span>
+              </span>
             </div>
+            {call.consent_notes && <p className="mt-3 text-sm leading-6 text-slate-500">{call.consent_notes}</p>}
           </div>
 
           <div className="flex flex-wrap gap-2">

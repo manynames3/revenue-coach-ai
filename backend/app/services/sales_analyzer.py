@@ -1,7 +1,9 @@
 import json
 import logging
+from typing import Any
 
 from app.config import settings
+from app.coaching_framework import normalize_coaching_framework
 from app.prompts.sales_call_analysis import build_analysis_prompt
 from app.schemas.call_analysis import AIAnalysisResult
 from app.services.glm_client import GLMClient
@@ -13,11 +15,12 @@ class SalesAnalyzer:
     def __init__(self):
         self.glm = GLMClient() if not settings.mock_ai else None
 
-    def analyze(self, transcript: str) -> AIAnalysisResult:
+    def analyze(self, transcript: str, coaching_framework: dict[str, Any] | None = None) -> AIAnalysisResult:
         if settings.mock_ai or not settings.zai_api_key:
             return self._mock_result()
 
-        system, user = build_analysis_prompt(transcript)
+        framework = json.dumps(normalize_coaching_framework(coaching_framework), indent=2)
+        system, user = build_analysis_prompt(transcript, framework)
         try:
             raw = self.glm.chat(system, user)
             return self._parse(raw)
@@ -57,6 +60,32 @@ class SalesAnalyzer:
                 }
             ],
             manager_notes=["Focus on discovery questions early", "Practice value-based pricing rebuttal"],
+            evidence=[
+                {
+                    "category": "objection",
+                    "speaker": "buyer",
+                    "quote": "That's way more than I was expecting.",
+                    "timestamp": "",
+                    "score_area": "money_readiness",
+                    "coaching_point": "The price concern appeared before the buyer connected the problem to measurable business impact.",
+                },
+                {
+                    "category": "missed_moment",
+                    "speaker": "rep",
+                    "quote": "We can be flexible on rollout and pricing.",
+                    "timestamp": "",
+                    "score_area": "resistance_management",
+                    "coaching_point": "The rep moved to accommodation before diagnosing whether the concern was budget, trust, timing, or comparison.",
+                },
+                {
+                    "category": "buying_signal",
+                    "speaker": "buyer",
+                    "quote": "How quickly could implementation happen?",
+                    "timestamp": "",
+                    "score_area": "urgency",
+                    "coaching_point": "Implementation timing is a signal of intent, but the manager should coach the rep to connect timing to consequences.",
+                },
+            ],
             coaching_drill="Role-play the first 5 minutes with a buyer who leads with pricing concerns. The rep must ask three problem and consequence questions before presenting.",
             follow_up_sms="Hi [Name], thanks for your time today. I'll send over the proposal by tomorrow. Let me know if any questions come up in the meantime. - [Rep Name]",
             follow_up_email={

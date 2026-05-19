@@ -8,13 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import Base, engine
-from app.routes import calls, dashboard, reps
+from app.routes import account, calls, dashboard, reps
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.models import call, call_analysis, organization, rep, user  # noqa: F401
     from app.models.organization import Organization
+    from app.models.user import User
 
     Base.metadata.create_all(bind=engine)
     # Create default org if not exists
@@ -22,6 +23,16 @@ async def lifespan(app: FastAPI):
         default_org = session.query(Organization).filter(Organization.id == "default").first()
         if not default_org:
             session.add(Organization(id="default", name="Default Org"))
+            session.commit()
+        default_user = session.query(User).filter(User.email == "demo-manager@revenuecoach.ai").first()
+        if not default_user:
+            session.add(
+                User(
+                    email="demo-manager@revenuecoach.ai",
+                    password_hash="demo-disabled",
+                    organization_id="default",
+                )
+            )
             session.commit()
     yield
 
@@ -39,6 +50,7 @@ app.add_middleware(
 app.include_router(reps.router)
 app.include_router(calls.router)
 app.include_router(dashboard.router)
+app.include_router(account.router)
 
 
 @app.get("/health")

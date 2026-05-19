@@ -24,6 +24,15 @@ class BuyingSignal(BaseModel):
     why_it_matters: str = ""
 
 
+class EvidenceItem(BaseModel):
+    category: str = ""
+    speaker: str = ""
+    quote: str = ""
+    timestamp: str = ""
+    score_area: str = ""
+    coaching_point: str = ""
+
+
 class FollowUpEmail(BaseModel):
     subject: str = ""
     body: str = ""
@@ -79,6 +88,7 @@ class AIAnalysisResult(BaseModel):
     objections: list[Objection] = Field(default_factory=list)
     buying_signals: list[BuyingSignal] = Field(default_factory=list)
     manager_notes: list[str] = Field(default_factory=list)
+    evidence: list[EvidenceItem] = Field(default_factory=list)
     coaching_drill: str = ""
     follow_up_sms: str = ""
     follow_up_email: FollowUpEmail = Field(default_factory=FollowUpEmail)
@@ -96,6 +106,7 @@ class AnalysisOut(BaseModel):
     objections: list[Objection] = []
     buying_signals: list[BuyingSignal] = []
     manager_notes: list[str] = []
+    evidence: list[EvidenceItem] = []
     coaching_drill: str | None = None
     follow_up_sms: str | None = None
     follow_up_email: FollowUpEmail | None = None
@@ -104,5 +115,4 @@ class AnalysisOut(BaseModel):
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
-
 

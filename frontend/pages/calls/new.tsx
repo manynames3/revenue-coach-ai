@@ -11,7 +11,7 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
-import type { Rep, UploadUrlResponse } from "../../types";
+import type { Account, Rep, UploadUrlResponse } from "../../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -29,6 +29,7 @@ export default function NewCall() {
   const [file, setFile] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [consentRequired, setConsentRequired] = useState(true);
 
   const [form, setForm] = useState({
     rep_id: "",
@@ -37,6 +38,8 @@ export default function NewCall() {
     call_type: "",
     outcome: "",
     transcript: "",
+    consent_confirmed: false,
+    consent_notes: "",
   });
 
   const [status, setStatus] = useState<"idle" | "uploading" | "creating" | "transcribing" | "analyzing" | "completed">("idle");
@@ -60,12 +63,32 @@ export default function NewCall() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/account`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Unable to load account settings.");
+        return r.json();
+      })
+      .then((payload: Account) => {
+        if (!cancelled) setConsentRequired(payload.trust_controls.recording_consent_required);
+      })
+      .catch(() => {
+        if (!cancelled) setConsentRequired(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const selectedRep = useMemo(() => reps.find((rep) => rep.id === form.rep_id), [reps, form.rep_id]);
 
   const canSubmit =
     status === "idle" &&
     Boolean(form.rep_id) &&
     Boolean(form.lead_name.trim()) &&
+    (!consentRequired || form.consent_confirmed) &&
     ((mode === "text" && Boolean(form.transcript.trim())) || (mode === "audio" && Boolean(file)));
 
   const statusText = {
@@ -358,6 +381,32 @@ export default function NewCall() {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div className="rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
+                  <label className="flex gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-[#cbd2f7]"
+                      checked={form.consent_confirmed}
+                      onChange={(e) => setForm({ ...form, consent_confirmed: e.target.checked })}
+                    />
+                    <span>
+                      <span className="block text-sm font-black text-[#090044]">Recording and transcript consent confirmed</span>
+                      <span className="mt-1 block text-sm leading-6 text-[#5a5886]">
+                        Confirm that this call may be uploaded and analyzed according to your team's recording and data policy.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="mt-4 block">
+                    <span className="mb-2 block text-sm font-black text-[#312f61]">Consent notes</span>
+                    <textarea
+                      className="min-h-20 w-full rounded-md border border-[#cbd2f7] px-3 py-3 text-sm leading-6 text-[#090044]"
+                      value={form.consent_notes}
+                      onChange={(e) => setForm({ ...form, consent_notes: e.target.value })}
+                      placeholder="Example: Buyer agreed to recording at the start of the call."
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
                   <dl className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <dt className="text-xs font-black uppercase text-[#8c8ab3]">Rep</dt>
@@ -386,6 +435,11 @@ export default function NewCall() {
                   {status !== "idle" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
                   {mode === "text" ? "Create scorecard" : "Upload and transcribe"}
                 </button>
+                {consentRequired && !form.consent_confirmed && (
+                  <p className="text-sm font-semibold text-[#5a5886]">
+                    Confirm recording and transcript consent before creating the scorecard.
+                  </p>
+                )}
               </div>
             )}
           </div>
