@@ -2,7 +2,7 @@
 
 RevenueCoach AI is a three-tier web application with an external AI/audio processing boundary. The Next.js frontend handles dashboard, rep, and call workflows. The FastAPI backend owns the REST API, relational data model, AI analysis orchestration, and AWS transcription integration. PostgreSQL stores reps, calls, transcripts, structured scorecards, and high-ticket sales psychology feedback.
 
-The public demo deploys the frontend to Cloudflare Pages and the backend to AWS API Gateway plus Lambda, with private RDS PostgreSQL for persistence.
+The public review build deployed the frontend to Cloudflare Pages and the backend to AWS API Gateway plus Lambda, with private RDS PostgreSQL for persistence. That AWS backend was documented and shut down after validation to avoid ongoing RDS and VPC endpoint costs while keeping the Cloudflare Pages frontend available.
 
 ## Container Diagram
 
@@ -86,18 +86,18 @@ Local development uses Docker Compose:
 
 The backend image runs `alembic upgrade head` before starting Uvicorn. The application still has a `create_all` fallback for local development, but Alembic is the documented schema path.
 
-The public demo uses a split serverless deployment:
+The public review build used a split serverless deployment:
 
 - Cloudflare Pages serves the static Next.js export from `frontend/out`.
-- `NEXT_PUBLIC_API_URL` is compiled into the frontend and currently points to `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
-- AWS HTTP API Gateway exposes the FastAPI app over HTTPS.
-- AWS Lambda runs the FastAPI app through `backend/app/lambda_handler.py` and Mangum.
-- Amazon RDS PostgreSQL stores application data in a private subnet.
-- An S3 bucket stores uploaded audio and Transcribe output.
-- VPC endpoints provide private Lambda access to S3 and Amazon Transcribe.
-- `backend/app/migration_handler.py` supports one-off Lambda schema migration work against private RDS without exposing the database publicly.
+- `NEXT_PUBLIC_API_URL` was compiled into the frontend and pointed to `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
+- AWS HTTP API Gateway exposed the FastAPI app over HTTPS.
+- AWS Lambda ran the FastAPI app through `backend/app/lambda_handler.py` and Mangum.
+- Amazon RDS PostgreSQL stored application data in a private subnet.
+- An S3 bucket stored uploaded audio and Transcribe output.
+- VPC endpoints provided private Lambda access to S3 and Amazon Transcribe.
+- `backend/app/migration_handler.py` supported one-off Lambda schema migration work against private RDS without exposing the database publicly.
 
-External dependencies are not provisioned by Compose. Real AI analysis requires Z.AI configuration, and the audio flow requires AWS credentials, an S3 bucket, bucket CORS policy, and Amazon Transcribe permissions. The deployed demo uses mock AI output so the public app can be reviewed without a model key.
+External dependencies are not provisioned by Compose. Real AI analysis requires Z.AI configuration, and the audio flow requires AWS credentials, an S3 bucket, bucket CORS policy, and Amazon Transcribe permissions. The review build used mock AI output so the public app could be reviewed without a model key.
 
 ## Key Constraints
 
@@ -108,4 +108,4 @@ External dependencies are not provisioned by Compose. Real AI analysis requires 
 - The AI contract depends on strict JSON prompting and Pydantic validation rather than provider-native structured output enforcement.
 - The high-ticket sales psychology feedback is question-led and buyer-centered; it is not an official implementation of any proprietary sales methodology.
 - `MOCK_AI=true` is useful for local development but can hide provider or prompt failures until a real API key is used.
-- The current AWS resources were created outside Terraform/CDK. Reproducible infrastructure is a clear next step before treating the deployment as production.
+- The AWS resources were created outside Terraform/CDK and shut down after validation. Reproducible infrastructure is a clear next step before treating the deployment as production.

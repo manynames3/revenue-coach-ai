@@ -2,13 +2,13 @@
 
 RevenueCoach AI is a full-stack sales coaching application that turns sales-call transcripts or uploaded audio into structured manager scorecards. It combines a Next.js dashboard, a FastAPI service, PostgreSQL JSONB persistence, direct browser-to-S3 audio uploads, Amazon Transcribe, and GLM 5.1 analysis through an OpenAI-compatible client, with a high-ticket sales psychology lens for question quality, pain depth, urgency, money readiness, and resistance management.
 
-Live demo: [https://revenue-coach-ai.pages.dev](https://revenue-coach-ai.pages.dev)
+Live frontend: [https://revenue-coach-ai.pages.dev](https://revenue-coach-ai.pages.dev)
 
 Sales page: [https://revenue-coach-ai.pages.dev/sales](https://revenue-coach-ai.pages.dev/sales)
 
-Public API: `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`
+Public API used for validation: `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`
 
-The public demo runs the static Next.js frontend on Cloudflare Pages and the FastAPI backend on AWS API Gateway, Lambda, and RDS PostgreSQL. Demo AI scoring is configured with `MOCK_AI=true`; local or production model-backed scoring uses `ZAI_API_KEY`.
+The public review build ran the static Next.js frontend on Cloudflare Pages and the FastAPI backend on AWS API Gateway, Lambda, and RDS PostgreSQL. Demo AI scoring was configured with `MOCK_AI=true`; local or production model-backed scoring uses `ZAI_API_KEY`. The AWS backend was documented and shut down after validation to avoid ongoing RDS and VPC endpoint costs while keeping the Cloudflare Pages frontend available.
 
 ## About
 
@@ -36,7 +36,7 @@ The app is designed for sales managers and team leads who need a repeatable way 
 - CI validation: GitHub Actions runs backend migrations/tests and frontend type/build checks.
 - Analytics-oriented persistence: call analysis data uses JSONB for nested score categories, objections, buying signals, notes, and follow-up artifacts while keeping primary entities relational.
 - Local development fallback: `MOCK_AI=true` lets the full UI and API workflow run without a live model key.
-- AWS-backed public demo: the deployed API runs FastAPI through Mangum on Lambda, persists to private RDS PostgreSQL, and uses an S3 bucket for presigned audio uploads.
+- AWS-backed review build: the deployed API ran FastAPI through Mangum on Lambda, persisted to private RDS PostgreSQL, and used an S3 bucket for presigned audio uploads before shutdown.
 
 ## Architecture
 
@@ -44,8 +44,9 @@ The app is designed for sales managers and team leads who need a repeatable way 
 - [Architecture decision records](docs/adrs/README.md)
 - [Revenue use cases](docs/revenue-use-cases.md)
 - [Privacy and security notes](docs/privacy-and-security.md)
+- [AWS shutdown record and screenshots](docs/aws-shutdown-2026-05-22.md)
 
-At a high level, the browser talks to a REST API, the API owns persistence and integrations, and external AI/audio services are isolated behind backend service classes. Local review uses a three-container Docker Compose stack; the public demo uses Cloudflare Pages plus AWS API Gateway, Lambda, RDS, S3, and Transcribe.
+At a high level, the browser talks to a REST API, the API owns persistence and integrations, and external AI/audio services are isolated behind backend service classes. Local review uses a three-container Docker Compose stack; the public review build used Cloudflare Pages plus AWS API Gateway, Lambda, RDS, S3, and Transcribe.
 
 ## Local Setup
 
@@ -125,9 +126,9 @@ docker-compose.yml
 The repository supports two deployment shapes:
 
 - Local review: Docker Compose runs the Next.js frontend, FastAPI backend, and PostgreSQL database.
-- Public demo: Cloudflare Pages serves the static frontend at `https://revenue-coach-ai.pages.dev`, and AWS API Gateway serves the FastAPI backend at `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
+- Public review build: Cloudflare Pages serves the static frontend at `https://revenue-coach-ai.pages.dev`, and AWS API Gateway served the FastAPI backend at `https://ebticgoe71.execute-api.us-east-1.amazonaws.com` during validation.
 
-The AWS backend uses Lambda with `backend/app/lambda_handler.py`, private RDS PostgreSQL, an S3 audio bucket, and VPC endpoints for S3 and Transcribe. The deployed demo uses `MOCK_AI=true`; model-backed analysis requires setting `ZAI_API_KEY` in the backend runtime.
+The AWS backend used Lambda with `backend/app/lambda_handler.py`, private RDS PostgreSQL, an S3 audio bucket, and VPC endpoints for S3 and Transcribe. The review build used `MOCK_AI=true`; model-backed analysis requires setting `ZAI_API_KEY` in the backend runtime.
 
 Infrastructure-as-code, managed secret rotation, custom domains, authentication, and a production CORS allowlist are not implemented in this repo yet.
 
@@ -140,18 +141,19 @@ The frontend is configured for static hosting on Cloudflare Pages.
 3. Set the build command to `npm run build`.
 4. Set the build output directory to `frontend/out`.
 5. Set the root directory to `frontend`.
-6. Add `NEXT_PUBLIC_API_URL` and point it to the deployed FastAPI backend. The current public demo uses `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
+6. Add `NEXT_PUBLIC_API_URL` and point it to the deployed FastAPI backend. The validated AWS review build used `https://ebticgoe71.execute-api.us-east-1.amazonaws.com`.
 7. Deploy from `master`.
 
 ## Known Constraints
 
 - No authentication or role-based access control is implemented.
-- The public demo uses deterministic mock AI output so it can be reviewed without a paid model key.
+- The AWS review build used deterministic mock AI output so it could be reviewed without a paid model key.
 - The backend still creates missing tables on startup as a local-development fallback, even though Alembic migrations are now present.
 - CORS is open for development.
-- The public AWS transcript workflow is smoke-tested end to end; full audio transcription depends on uploading valid audio and waiting for Amazon Transcribe completion.
+- The public AWS transcript workflow was smoke-tested end to end; full audio transcription depends on uploading valid audio and waiting for Amazon Transcribe completion.
 - AWS resources were provisioned outside this repository; Terraform/CDK is a follow-up.
-- No screenshots are currently committed.
+- AWS resources were documented and shut down after validation to avoid ongoing RDS and VPC endpoint costs.
+- Screenshots from the validated review build and post-shutdown state are committed under `docs/screenshots/`.
 
 ## Roadmap
 
