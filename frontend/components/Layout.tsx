@@ -62,10 +62,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
               <div className="flex items-center gap-2 text-xs font-black uppercase text-emerald-800">
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                AWS demo live
+                Frontend review build
               </div>
               <p className="mt-2 text-xs leading-5 text-emerald-900">
-                API, database, and audio storage are connected for recruiter review.
+                AWS backend was validated, documented, and shut down for cost control.
               </p>
             </div>
           </div>

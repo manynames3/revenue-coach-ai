@@ -6,9 +6,17 @@ This note records the validated deployment and the AWS cost-control shutdown per
 
 ## Screenshots
 
-- Product UI preview: [screenshots/revenuecoach-product-preview.png](screenshots/revenuecoach-product-preview.png)
-- Live Cloudflare Pages sales page after AWS shutdown: [screenshots/revenuecoach-sales-live-2026-05-23.png](screenshots/revenuecoach-sales-live-2026-05-23.png)
-- Dashboard after AWS backend shutdown: [screenshots/revenuecoach-dashboard-after-shutdown-2026-05-23.png](screenshots/revenuecoach-dashboard-after-shutdown-2026-05-23.png)
+Product UI preview:
+
+![Product UI preview](screenshots/revenuecoach-product-preview.png)
+
+Live Cloudflare Pages sales page after AWS shutdown:
+
+![Live Cloudflare Pages sales page after AWS shutdown](screenshots/revenuecoach-sales-live-2026-05-23.png)
+
+Dashboard after AWS backend shutdown:
+
+![Dashboard after AWS backend shutdown](screenshots/revenuecoach-dashboard-after-shutdown-2026-05-23.png)
 
 ## Deployment Evidence
 
