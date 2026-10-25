@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.call_status import CallStatus
 from app.database import Base
+from app.models.types import json_document_type
 
 
 def utc_now() -> datetime:
@@ -25,6 +26,8 @@ class Call(Base):
     transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
     consent_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     consent_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transcript_segments: Mapped[list | None] = mapped_column(json_document_type(), nullable=True)
+    is_sample: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     audio_s3_key: Mapped[str | None] = mapped_column(String, nullable=True)
     transcription_job_id: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default=CallStatus.CREATED.value)

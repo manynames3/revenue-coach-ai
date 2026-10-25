@@ -9,19 +9,52 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U revenuecoach -d revenuecoach"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   backend:
     build: ./backend
     ports:
       - "8000:8000"
-    environment:
+    environment: &backend_environment
       DATABASE_URL: postgresql://revenuecoach:revenuecoach@db:5432/revenuecoach
       ZAI_API_KEY: ${ZAI_API_KEY:-}
       ZAI_BASE_URL: ${ZAI_BASE_URL:-https://api.z.ai/api/paas/v4}
       ZAI_MODEL: ${ZAI_MODEL:-glm-5.1}
       MOCK_AI: ${MOCK_AI:-true}
+      AUTO_CREATE_SCHEMA: "false"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE:-lax}
+      AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      PILOT_PRICE_USD: ${PILOT_PRICE_USD:-}
+      DAILY_ANALYSIS_LIMIT: ${DAILY_ANALYSIS_LIMIT:-100}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-revenuecoach-audio}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment: *backend_environment
+    depends_on:
+      backend:
+        condition: service_healthy
 
   frontend:
     build: ./frontend

@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -11,6 +11,10 @@ if settings.database_url.startswith("sqlite"):
         engine_kwargs["poolclass"] = StaticPool
 
 engine = create_engine(settings.database_url, **engine_kwargs)
+if settings.database_url.startswith("sqlite"):
+    @event.listens_for(engine, "connect")
+    def _sqlite_foreign_keys(connection, record):
+        connection.execute("PRAGMA foreign_keys=ON")
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 

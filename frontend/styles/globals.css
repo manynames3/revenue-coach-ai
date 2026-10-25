@@ -7,6 +7,16 @@ body {
   @apply bg-[#f6f8ff] text-[#08043f] antialiased;
 }
 
+p,
+h1,
+h2,
+h3,
+label,
+blockquote,
+pre {
+  overflow-wrap: anywhere;
+}
+
 button,
 a,
 input,

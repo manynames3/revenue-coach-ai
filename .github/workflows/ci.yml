@@ -13,7 +13,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: sqlite://
+      DATABASE_URL: sqlite:///./alembic-smoke.db
       MOCK_AI: "true"
       AWS_REGION: us-east-1
       AWS_S3_BUCKET: test-audio
@@ -34,6 +34,9 @@ jobs:
 
       - name: Run backend tests
         run: pytest
+
+      - name: Exercise synthetic evaluation tooling
+        run: python -m app.evaluation evals/synthetic-cases.jsonl evals/synthetic-predictions.jsonl
 
   frontend:
     name: Frontend
@@ -58,5 +61,11 @@ jobs:
       - name: Type check
         run: npm exec -- tsc --noEmit
 
+      - name: Test authenticated API proxy
+        run: npm test
+
       - name: Build frontend
         run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev

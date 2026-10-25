@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -25,6 +25,14 @@ class CallAnalysis(Base):
     buying_signals: Mapped[list[dict[str, Any]]] = mapped_column(json_document_type(), nullable=True)
     manager_notes: Mapped[list[str]] = mapped_column(json_document_type(), nullable=True)
     evidence: Mapped[list[dict[str, Any]]] = mapped_column(json_document_type(), nullable=True)
+    score_reasons: Mapped[dict | None] = mapped_column(json_document_type(), nullable=True)
+    rubric_snapshot: Mapped[dict | None] = mapped_column(json_document_type(), nullable=True)
+    evidence_coverage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_mode: Mapped[str] = mapped_column(String, nullable=False, default="legacy")
+    model_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    feedback_rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    review_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     sales_psychology: Mapped[dict[str, Any]] = mapped_column(json_document_type(), nullable=True)
     coaching_drill: Mapped[str] = mapped_column(Text, nullable=True)
     follow_up_sms: Mapped[str] = mapped_column(Text, nullable=True)

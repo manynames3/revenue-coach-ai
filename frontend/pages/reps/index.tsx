@@ -1,8 +1,9 @@
+import { apiFetch } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Mail, Phone, Plus, RefreshCw, UserRound, Users } from "lucide-react";
 import type { Call, Rep } from "../../types";
+import { useAuth } from "../../components/AuthContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface RepStats {
   total: number;
@@ -16,6 +17,7 @@ function formatCoverage(stats: RepStats) {
 }
 
 export default function RepsPage() {
+  const { user } = useAuth();
   const [reps, setReps] = useState<Rep[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [name, setName] = useState("");
@@ -29,7 +31,7 @@ export default function RepsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [repsResponse, callsResponse] = await Promise.all([fetch(`${API_URL}/reps`), fetch(`${API_URL}/calls`)]);
+      const [repsResponse, callsResponse] = await Promise.all([apiFetch("/reps"), apiFetch("/calls")]);
       if (!repsResponse.ok || !callsResponse.ok) throw new Error("Unable to load rep data.");
       const [repRows, callRows] = await Promise.all([repsResponse.json(), callsResponse.json()]);
       setReps(repRows);
@@ -66,7 +68,7 @@ export default function RepsPage() {
     setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/reps`, {
+      const response = await apiFetch("/reps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone }),
@@ -112,7 +114,7 @@ export default function RepsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[360px_1fr]">
-        <section className="rounded-lg border border-slate-200 bg-white">
+        {user?.role === "manager" && <section className="rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-base font-black text-slate-950">Add rep</h2>
             <p className="text-sm text-slate-500">Create a seller profile for future calls.</p>
@@ -154,7 +156,7 @@ export default function RepsPage() {
               Add rep
             </button>
           </div>
-        </section>
+        </section>}
 
         <section className="rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">

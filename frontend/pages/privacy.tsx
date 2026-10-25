@@ -1,0 +1,15 @@
+import Head from "next/head";
+import { PublicHeader } from "../components/FormUI";
+
+export default function Privacy() {
+  return <><Head><title>Conversation data and privacy | RevenueCoach</title></Head><PublicHeader />
+    <main className="mx-auto max-w-3xl space-y-7 px-5 py-12">
+      <h1 className="text-3xl font-bold">Conversation data and privacy</h1>
+      <section><h2 className="text-lg font-bold">What is processed</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">Your team can submit transcripts, call context, and authorized audio recordings. Real scoring sends transcript segments and your configured offer context to the configured model provider. Audio transcription uses Amazon Transcribe. Sample calls are synthetic and do not require a model request.</p></section>
+      <section><h2 className="text-lg font-bold">Who has access</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">Managers can review their workspace's calls, settings, and coaching. Reps can access their own calls and assigned practice. Team invitations expire and are single-use. Workspace operators maintain the application and its data services.</p></section>
+      <section><h2 className="text-lg font-bold">Retention and deletion</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">Managers configure conversation retention in workspace settings. Scheduled maintenance deletes expired conversations, scorecards, linked coaching, and audio artifacts. If storage cleanup fails, deletion is retained for retry and logged. Managers can also delete an individual call. Hosting backups follow the operator's configured backup policy and may not disappear immediately.</p></section>
+      <section><h2 className="text-lg font-bold">Contact-detail redaction</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">When enabled, redaction removes detected email addresses, phone numbers, and long account/card-like numbers from stored text and coaching. It is pattern-based and does not guarantee removal of names or every type of personal information. Authorized raw audio is processed before its text can be redacted; audio artifacts are removed after redacted transcription completes.</p></section>
+      <section><h2 className="text-lg font-bold">Permission and review</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">Only submit conversations you are authorized to process. Consent confirmation records your acknowledgement; it does not determine which permissions your situation requires. Verified excerpts support the scorecard, while coaching interpretations and follow-up drafts still need human review.</p></section>
+      <section><h2 className="text-lg font-bold">Pilot requests</h2><p className="mt-2 text-sm leading-7 text-[#5a5886]">Pilot contact information is recorded for scoping and invoicing. No payment information is collected through the request form. Confirm the operator's privacy terms, subprocessors, backup retention, and contact route before sharing production customer data.</p></section>
+    </main></>;
+}

@@ -1,6 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -12,6 +13,7 @@ import {
   Gauge,
   LineChart,
   Mail,
+  Menu,
   MessageSquareText,
   PlayCircle,
   ShieldQuestion,
@@ -242,6 +244,7 @@ const demoSignals = [
 ];
 
 const SalesPage: MarketingPage = () => {
+  const [mobileNavigation, setMobileNavigation] = useState(false);
   return (
     <>
       <Head>
@@ -267,7 +270,7 @@ const SalesPage: MarketingPage = () => {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#5c67ff] text-white">
                 <LineChart className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="text-3xl font-bold italic text-[#5c67ff]">RevenueCoach</span>
+              <span className="text-2xl font-bold italic text-[#5c67ff]">RevenueCoach</span>
             </a>
 
             <nav className="hidden items-center gap-9 text-sm font-semibold uppercase text-[#090044] lg:flex">
@@ -286,13 +289,23 @@ const SalesPage: MarketingPage = () => {
             </nav>
 
             <a
-              href="/demo"
+              href="/pilot"
               className="hidden h-11 items-center justify-center gap-2 rounded-full bg-[#08043f] px-5 text-sm font-bold text-white hover:bg-[#1b1670] sm:inline-flex"
             >
-              View demo
+              Request a pilot
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
+            <button type="button" title="Navigation" aria-label="Navigation" aria-expanded={mobileNavigation}
+              aria-controls="mobile-website-navigation" onClick={() => setMobileNavigation(!mobileNavigation)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-[#090044] lg:hidden">
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
+          {mobileNavigation && <nav id="mobile-website-navigation" aria-label="Mobile website" className="grid gap-1 border-t border-[#dfe4ff] px-5 py-3 lg:hidden">
+            {navItems.map((item) => <a key={item.label} href={item.href} onClick={() => setMobileNavigation(false)} className="py-2 text-sm font-semibold text-[#090044]">{item.label}</a>)}
+            <Link href="/pilot" onClick={() => setMobileNavigation(false)} className="py-2 text-sm font-semibold text-[#3d42ff]">Request a pilot</Link>
+            <Link href="/login" onClick={() => setMobileNavigation(false)} className="py-2 text-sm font-semibold text-[#090044]">Sign in</Link>
+          </nav>}
         </header>
 
         <main>
@@ -301,26 +314,25 @@ const SalesPage: MarketingPage = () => {
               <div className="mx-auto max-w-4xl text-center">
                 <p className="text-sm font-bold uppercase text-[#1684ff]">AI sales coaching for revenue teams</p>
                 <h1 className="mt-4 text-4xl font-extrabold leading-tight text-[#090044] sm:text-5xl lg:text-6xl">
-                  Coach the conversations that decide high-ticket deals
+                  Sales coaching for high-ticket teams
                 </h1>
                 <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#312f61]">
-                  RevenueCoach AI turns real sales calls into manager-ready scorecards, buyer psychology feedback,
-                  better questions, and practice drills so reps know exactly how to improve before the next call.
+                  Turn sales calls into source-backed coaching, focused practice, and clearer next steps for your reps.
                 </p>
                 <div className="mt-8 flex flex-wrap justify-center gap-3">
                   <a
-                    href="/demo"
+                    href="/pilot"
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#5c67ff] px-6 text-sm font-bold text-white shadow-[0_16px_35px_rgba(92,103,255,0.28)] hover:bg-[#4752f3]"
                   >
-                    See the demo flow
+                    Request a pilot
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </a>
                   <a
-                    href="#solutions"
+                    href="/demo"
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#bfc6ff] bg-white px-6 text-sm font-bold text-[#090044] hover:border-[#5c67ff]"
                   >
                     <PlayCircle className="h-4 w-4 text-[#5c67ff]" aria-hidden="true" />
-                    Explore solutions
+                    View the demo
                   </a>
                 </div>
               </div>
@@ -670,6 +682,13 @@ const SalesPage: MarketingPage = () => {
             </div>
           </section>
         </main>
+        <footer className="border-t border-[#dfe4ff] px-5 py-10">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5">
+            <div><p className="text-lg font-bold">Coach one skill better this month.</p><p className="mt-2 text-sm text-[#5a5886]">A 30-day team pilot, scoped first and billed by invoice.</p></div>
+            <Link href="/pilot" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#090044] px-5 text-sm font-semibold text-white">Request a paid pilot<ArrowRight className="h-4 w-4" /></Link>
+            <div className="flex gap-5 text-sm text-[#5a5886]"><Link href="/signup">Create workspace</Link><Link href="/login">Sign in</Link><Link href="/privacy">Data and privacy</Link></div>
+          </div>
+        </footer>
       </div>
     </>
   );

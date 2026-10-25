@@ -25,6 +25,7 @@ class BuyingSignal(BaseModel):
 
 
 class EvidenceItem(BaseModel):
+    segment_id: str = ""
     category: str = ""
     speaker: str = ""
     quote: str = ""
@@ -39,14 +40,14 @@ class FollowUpEmail(BaseModel):
 
 
 class SalesPsychologyScores(BaseModel):
-    trust_and_safety: float = 0
-    problem_clarity: float = 0
-    emotional_depth: float = 0
-    consequence_awareness: float = 0
-    decision_clarity: float = 0
-    money_readiness: float = 0
-    urgency: float = 0
-    resistance_management: float = 0
+    trust_and_safety: float | None = None
+    problem_clarity: float | None = None
+    emotional_depth: float | None = None
+    consequence_awareness: float | None = None
+    decision_clarity: float | None = None
+    money_readiness: float | None = None
+    urgency: float | None = None
+    resistance_management: float | None = None
 
 
 class BetterQuestion(BaseModel):
@@ -80,9 +81,10 @@ class SalesPsychology(BaseModel):
 
 
 class AIAnalysisResult(BaseModel):
-    overall_score: float = 0
+    overall_score: float | None = Field(default=None, ge=0, le=100)
     summary: str = ""
-    scores: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
+    scores: dict[str, float | None] = Field(default_factory=dict)
+    score_reasons: dict[str, str] = Field(default_factory=dict)
     strengths: list[str] = Field(default_factory=list)
     missed_opportunities: list[str] = Field(default_factory=list)
     objections: list[Objection] = Field(default_factory=list)
@@ -100,7 +102,15 @@ class AnalysisOut(BaseModel):
     call_id: str
     overall_score: float | None = None
     summary: str | None = None
-    scores: ScoreBreakdown | None = None
+    scores: dict[str, float | None] | None = None
+    score_reasons: dict[str, str] = Field(default_factory=dict)
+    rubric_snapshot: dict | None = None
+    evidence_coverage: float | None = None
+    source_mode: str = "legacy"
+    model_name: str | None = None
+    feedback_rating: int | None = None
+    review_seconds: int | None = None
+    feedback_at: datetime | None = None
     strengths: list[str] = []
     missed_opportunities: list[str] = []
     objections: list[Objection] = []
@@ -111,7 +121,6 @@ class AnalysisOut(BaseModel):
     follow_up_sms: str | None = None
     follow_up_email: FollowUpEmail | None = None
     sales_psychology: SalesPsychology | None = None
-    raw_ai_json: str | None = None
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}

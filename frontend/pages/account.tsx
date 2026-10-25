@@ -1,316 +1,170 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  Save,
-  ShieldCheck,
-  SlidersHorizontal,
-  Users,
-} from "lucide-react";
+import Head from "next/head";
+import { useEffect, useState } from "react";
+import { Copy, Loader2, Plus, Save, Trash2, UserPlus } from "lucide-react";
+import { useAuth } from "../components/AuthContext";
+import { Field, inputClass, Notice, primaryClass, secondaryClass } from "../components/FormUI";
+import { api, jsonBody } from "../lib/api";
 import type { Account, CoachingCategory } from "../types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-function categoriesToText(categories: CoachingCategory[]) {
-  return categories
-    .map((category) => `${category.key} | ${category.label} | ${category.weight} | ${category.description}`)
-    .join("\n");
-}
-
-function parseCategories(value: string): CoachingCategory[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [key = "", label = "", weight = "10", description = ""] = line.split("|").map((part) => part.trim());
-      const parsedWeight = Number.parseInt(weight, 10);
-      return {
-        key,
-        label: label || key,
-        weight: Number.isFinite(parsedWeight) ? parsedWeight : 10,
-        description,
-      };
-    })
-    .filter((category) => category.key && category.label);
-}
-
-function ReadinessItem({ label, ready }: { label: string; ready: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-[#dfe4ff] bg-white p-4">
-      <span className="text-sm font-bold text-[#312f61]">{label}</span>
-      <span className={`text-sm font-black ${ready ? "text-emerald-700" : "text-amber-700"}`}>
-        {ready ? "Ready" : "Needs work"}
-      </span>
-    </div>
-  );
-}
+type Invite = { id: string; email: string; role: string; expires_at: string };
+type Event = { id: string; action: string; created_at: string };
+type Tab = "rubric" | "team" | "privacy";
 
 export default function AccountPage() {
+  const { user, establish } = useAuth();
   const [account, setAccount] = useState<Account | null>(null);
-  const [organizationName, setOrganizationName] = useState("");
-  const [frameworkName, setFrameworkName] = useState("");
-  const [frameworkDescription, setFrameworkDescription] = useState("");
-  const [principlesText, setPrinciplesText] = useState("");
-  const [categoriesText, setCategoriesText] = useState("");
-  const [dataRetentionDays, setDataRetentionDays] = useState(90);
-  const [recordingConsentRequired, setRecordingConsentRequired] = useState(true);
-  const [piiRedactionEnabled, setPiiRedactionEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  const loadAccount = async () => {
-    setError(null);
+  const [tab, setTab] = useState<Tab>("rubric");
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("rep");
+  const [inviteLink, setInviteLink] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const editable = user?.role === "manager";
+  async function load() {
+    setError("");
     try {
-      const response = await fetch(`${API_URL}/account`);
-      if (!response.ok) throw new Error("Account settings could not be loaded.");
-      const payload: Account = await response.json();
-      setAccount(payload);
-      setOrganizationName(payload.organization.name);
-      setFrameworkName(payload.coaching_framework.name);
-      setFrameworkDescription(payload.coaching_framework.description);
-      setPrinciplesText(payload.coaching_framework.principles.join("\n"));
-      setCategoriesText(categoriesToText(payload.coaching_framework.score_categories));
-      setDataRetentionDays(payload.trust_controls.data_retention_days);
-      setRecordingConsentRequired(payload.trust_controls.recording_consent_required);
-      setPiiRedactionEnabled(payload.trust_controls.pii_redaction_enabled);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load account settings.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAccount();
-  }, []);
-
-  const parsedCategories = useMemo(() => parseCategories(categoriesText), [categoriesText]);
-
-  const saveAccount = async () => {
-    setSaving(true);
-    setSaved(false);
-    setError(null);
-    try {
-      const response = await fetch(`${API_URL}/account`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organization_name: organizationName,
-          coaching_framework: {
-            name: frameworkName,
-            description: frameworkDescription,
-            principles: principlesText
-              .split("\n")
-              .map((item) => item.trim())
-              .filter(Boolean),
-            score_categories: parsedCategories,
-          },
-          data_retention_days: dataRetentionDays,
-          recording_consent_required: recordingConsentRequired,
-          pii_redaction_enabled: piiRedactionEnabled,
-        }),
-      });
-      if (!response.ok) throw new Error("Account settings could not be saved.");
-      const payload: Account = await response.json();
-      setAccount(payload);
-      setSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save account settings.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl space-y-5">
-        <div className="h-28 animate-pulse rounded-lg bg-white" />
-        <div className="h-96 animate-pulse rounded-lg bg-white" />
-      </div>
-    );
+      const result = await api<Account>("/account");
+      setAccount(result);
+      if (editable) {
+        const [invitations, audit] = await Promise.all([api<Invite[]>("/auth/invitations"), api<Event[]>("/account/audit")]);
+        setInvites(invitations); setEvents(audit);
+      }
+    } catch (err) { setError(err instanceof Error ? err.message : "Settings unavailable."); }
   }
-
-  return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <p className="text-xs font-black uppercase text-[#1684ff]">Workspace settings</p>
-          <h1 className="mt-1 text-3xl font-black text-[#090044]">Account, framework, and trust controls</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#4c4a7d]">
-            Configure the coaching rubric that shapes new analyses and show the controls a buyer expects before
-            uploading real sales conversations.
-          </p>
-        </div>
-        <button
-          onClick={saveAccount}
-          disabled={saving}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#090044] px-4 text-sm font-bold text-white hover:bg-[#1b1670] disabled:opacity-60"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
-          Save settings
-        </button>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-rose-600" aria-hidden="true" />
-            <p className="text-sm font-semibold text-rose-700">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {saved && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" aria-hidden="true" />
-            <p className="text-sm font-semibold text-emerald-800">Settings saved. New scorecards will use this framework.</p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="rounded-lg border border-[#dfe4ff] bg-white p-5 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
-          <div className="mb-5 flex items-start gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
-              <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="text-lg font-black text-[#090044]">Coaching framework</h2>
-              <p className="text-sm text-[#5a5886]">This rubric is injected into the analysis prompt for new calls.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label>
-              <span className="mb-2 block text-sm font-black text-[#312f61]">Workspace name</span>
-              <input
-                className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
-                value={organizationName}
-                onChange={(event) => setOrganizationName(event.target.value)}
-              />
-            </label>
-            <label>
-              <span className="mb-2 block text-sm font-black text-[#312f61]">Framework name</span>
-              <input
-                className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
-                value={frameworkName}
-                onChange={(event) => setFrameworkName(event.target.value)}
-              />
-            </label>
-            <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-[#312f61]">Description</span>
-              <textarea
-                className="min-h-24 w-full rounded-md border border-[#cbd2f7] px-3 py-3 text-sm leading-6 text-[#090044]"
-                value={frameworkDescription}
-                onChange={(event) => setFrameworkDescription(event.target.value)}
-              />
-            </label>
-            <label>
-              <span className="mb-2 block text-sm font-black text-[#312f61]">Principles</span>
-              <textarea
-                className="min-h-56 w-full rounded-md border border-[#cbd2f7] px-3 py-3 text-sm leading-6 text-[#090044]"
-                value={principlesText}
-                onChange={(event) => setPrinciplesText(event.target.value)}
-                placeholder="One principle per line"
-              />
-            </label>
-            <label>
-              <span className="mb-2 block text-sm font-black text-[#312f61]">Score categories</span>
-              <textarea
-                className="min-h-56 w-full rounded-md border border-[#cbd2f7] px-3 py-3 font-mono text-xs leading-6 text-[#090044]"
-                value={categoriesText}
-                onChange={(event) => setCategoriesText(event.target.value)}
-                placeholder="key | label | weight | description"
-              />
-              <span className="mt-2 block text-xs leading-5 text-[#5a5886]">
-                Format: key | label | weight | description
-              </span>
-            </label>
-          </div>
-        </section>
-
-        <aside className="space-y-5">
-          <section className="rounded-lg border border-[#dfe4ff] bg-white p-5 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
-            <div className="mb-5 flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
-                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-lg font-black text-[#090044]">Trust controls</h2>
-                <p className="text-sm text-[#5a5886]">Visible policy settings for pilot customers.</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <label>
-                <span className="mb-2 block text-sm font-black text-[#312f61]">Data retention days</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={3650}
-                  className="h-11 w-full rounded-md border border-[#cbd2f7] px-3 text-sm text-[#090044]"
-                  value={dataRetentionDays}
-                  onChange={(event) => setDataRetentionDays(Number.parseInt(event.target.value, 10) || 90)}
-                />
-              </label>
-              <label className="flex gap-3 rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-[#cbd2f7]"
-                  checked={recordingConsentRequired}
-                  onChange={(event) => setRecordingConsentRequired(event.target.checked)}
-                />
-                <span>
-                  <span className="block text-sm font-black text-[#090044]">Require call consent confirmation</span>
-                  <span className="mt-1 block text-sm leading-6 text-[#5a5886]">New call intake asks managers to confirm upload permission.</span>
-                </span>
-              </label>
-              <label className="flex gap-3 rounded-lg border border-[#dfe4ff] bg-[#fbfcff] p-4">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-[#cbd2f7]"
-                  checked={piiRedactionEnabled}
-                  onChange={(event) => setPiiRedactionEnabled(event.target.checked)}
-                />
-                <span>
-                  <span className="block text-sm font-black text-[#090044]">Mark PII redaction required</span>
-                  <span className="mt-1 block text-sm leading-6 text-[#5a5886]">
-                    Flags the workspace as requiring redaction review before broad sharing.
-                  </span>
-                </span>
-              </label>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-[#dfe4ff] bg-white p-5 shadow-[0_12px_30px_rgba(9,0,68,0.04)]">
-            <div className="mb-5 flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef1ff] text-[#5c67ff]">
-                <Users className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-lg font-black text-[#090044]">Team basics</h2>
-                <p className="text-sm text-[#5a5886]">Visible account model for pilot review.</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <ReadinessItem label={`${account?.users.length || 0} manager seat`} ready={Boolean(account?.users.length)} />
-              <ReadinessItem label={`${account?.reps.length || 0} rep profiles`} ready={Boolean(account?.reps.length)} />
-              <ReadinessItem label="Audio upload deletion path" ready={Boolean(account?.trust_controls.delete_call_removes_audio_artifacts)} />
-              <ReadinessItem
-                label="Production authentication mode"
-                ready={Boolean(account && account.trust_controls.auth_mode !== "demo_workspace")}
-              />
-            </div>
-            <p className="mt-4 text-xs leading-5 text-[#5a5886]">
-              This demo surfaces the account model, but production auth and billing still need to be wired before paid self-serve use.
-            </p>
-          </section>
-        </aside>
-      </div>
+  useEffect(() => { load(); }, [editable]);
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (!account) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const payload = await api<Account>("/account", jsonBody({
+        organization_name: account.organization.name, coaching_framework: account.coaching_framework,
+        offer_context: account.offer_context, data_retention_days: account.trust_controls.data_retention_days,
+        recording_consent_required: account.trust_controls.recording_consent_required,
+        pii_redaction_enabled: account.trust_controls.pii_redaction_enabled,
+      }, "PATCH"));
+      setAccount(payload); setNotice("Settings saved. New scorecards use the current rubric; existing scorecards keep their original version.");
+      setEvents(await api<Event[]>("/account/audit"));
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save settings."); }
+    finally { setBusy(false); }
+  }
+  function category(index: number, patch: Partial<CoachingCategory>) {
+    if (!account) return;
+    setAccount({ ...account, coaching_framework: { ...account.coaching_framework,
+      score_categories: account.coaching_framework.score_categories.map((item, n) => n === index ? { ...item, ...patch } : item) } });
+  }
+  async function invite(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await api<{ url: string }>("/auth/invitations", jsonBody({ email: inviteEmail, role: inviteRole }));
+      setInviteLink(result.url); setInviteEmail("");
+      setInvites(await api<Invite[]>("/auth/invitations"));
+      setNotice("Invitation created. Share this one-time link with the intended teammate.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Invitation failed."); }
+    finally { setBusy(false); }
+  }
+  async function updateMember(id: string, active: boolean, role: string) {
+    setBusy(true); setError("");
+    try { await api("/account/members/" + id, jsonBody({ active, role }, "PATCH")); await load(); }
+    catch (err) { setError(err instanceof Error ? err.message : "Member update failed."); }
+    finally { setBusy(false); }
+  }
+  async function revoke(id: string) {
+    setBusy(true); setError("");
+    try { await api("/auth/invitations/" + id, { method: "DELETE" }); setInvites((items) => items.filter((item) => item.id !== id)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to revoke invitation."); }
+    finally { setBusy(false); }
+  }
+  async function password(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      const session = await api<Parameters<typeof establish>[0]>("/auth/password", jsonBody({ current_password: currentPassword, new_password: newPassword }));
+      establish(session); setCurrentPassword(""); setNewPassword(""); setNotice("Password updated. Other sessions were signed out.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Password update failed."); }
+    finally { setBusy(false); }
+  }
+  if (!account) return <div className="mx-auto max-w-4xl"><Notice message={error} />{error ? <button className={secondaryClass + " mt-4"} onClick={load}>Retry</button> : <p role="status">Loading workspace settings...</p>}</div>;
+  const framework = account.coaching_framework;
+  return <div className="mx-auto max-w-6xl space-y-6">
+    <Head><title>Workspace settings | RevenueCoach</title></Head>
+    <header><p className="text-xs font-semibold uppercase text-[#1684ff]">Workspace settings</p>
+      <h1 className="mt-2 text-3xl font-bold text-[#090044]">{account.organization.name}</h1>
+      <p className="mt-2 text-sm text-[#5a5886]">Rubric version {account.framework_version} · {user?.role === "manager" ? "Manager access" : "Rep access"}</p></header>
+    <Notice message={error} /><Notice message={notice} success />
+    <div role="tablist" aria-label="Workspace settings" className="flex gap-1 border-b border-[#dfe4ff]">
+      {(["rubric", "team", "privacy"] as Tab[]).map((key) => <button key={key} role="tab" aria-selected={tab === key}
+        onClick={() => setTab(key)} className={"px-4 py-3 text-sm font-semibold capitalize " + (tab === key ? "border-b-2 border-[#5c67ff] text-[#3d42ff]" : "text-[#5a5886]")}>{key}</button>)}
     </div>
-  );
+    {tab === "rubric" && <form onSubmit={save} className="space-y-7">
+      <fieldset disabled={!editable || busy} className="grid gap-5 sm:grid-cols-2">
+        <Field label="Workspace name"><input required maxLength={100} className={inputClass} value={account.organization.name} onChange={(e) => setAccount({ ...account, organization: { ...account.organization, name: e.target.value } })} /></Field>
+        <Field label="Rubric name"><input required maxLength={100} className={inputClass} value={framework.name} onChange={(e) => setAccount({ ...account, coaching_framework: { ...framework, name: e.target.value } })} /></Field>
+        <Field label="Coaching goals"><textarea rows={3} maxLength={2000} className={inputClass} value={framework.description} onChange={(e) => setAccount({ ...account, coaching_framework: { ...framework, description: e.target.value } })} /></Field>
+        <Field label="Coaching principles"><textarea rows={3} className={inputClass} value={framework.principles.join("\n")} onChange={(e) => setAccount({ ...account, coaching_framework: { ...framework, principles: e.target.value.split("\n") } })} /></Field>
+        {Object.entries({ offer: "Offer", buyer: "Target buyer", deal_value: "Typical deal value", success_metric: "Pilot success metric" }).map(([key, label]) =>
+          <Field key={key} label={label}><textarea rows={2} maxLength={2000} className={inputClass} value={account.offer_context[key] || ""} onChange={(e) => setAccount({ ...account, offer_context: { ...account.offer_context, [key]: e.target.value } })} /></Field>)}
+      </fieldset>
+      <section><div className="flex items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Scoring categories</h2><p className="mt-1 text-sm text-[#5a5886]">Unobserved categories are excluded from the weighted total and reduce coverage.</p></div>
+        {editable && <button type="button" disabled={busy || framework.score_categories.length >= 12} className={secondaryClass} onClick={() => {
+          let key = "skill_" + (framework.score_categories.length + 1); while (framework.score_categories.some((item) => item.key === key)) key += "_new";
+          setAccount({ ...account, coaching_framework: { ...framework, score_categories: [...framework.score_categories, { key, label: "New category", description: "", weight: 10, low_anchor: "Little or no evidence of the skill.", high_anchor: "Specific, buyer-centered evidence of the skill." }] } });
+        }}><Plus className="h-4 w-4" />Add category</button>}
+      </div>
+      <div className="mt-4 divide-y divide-[#dfe4ff]">
+        {framework.score_categories.map((item, index) => <fieldset disabled={!editable || busy} key={index} className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_100px_40px]">
+          <Field label="Category"><input required maxLength={80} className={inputClass} value={item.label} onChange={(e) => category(index, { label: e.target.value })} /></Field>
+          <Field label="Scoring key"><input required pattern="[a-z][a-z0-9_]{1,39}" className={inputClass} value={item.key} onChange={(e) => category(index, { key: e.target.value })} /></Field>
+          <Field label="Weight"><input type="number" required min={1} max={100} className={inputClass} value={item.weight} onChange={(e) => category(index, { weight: Number(e.target.value) })} /></Field>
+          <button type="button" title={"Remove " + item.label} aria-label={"Remove " + item.label} disabled={framework.score_categories.length <= 1} className="mt-6 flex h-10 w-10 items-center justify-center text-rose-700 disabled:opacity-40"
+            onClick={() => setAccount({ ...account, coaching_framework: { ...framework, score_categories: framework.score_categories.filter((_, n) => n !== index) } })}><Trash2 className="h-4 w-4" /></button>
+          <div className="lg:col-span-2"><Field label="Low-score behavior"><textarea required maxLength={500} rows={2} className={inputClass} value={item.low_anchor} onChange={(e) => category(index, { low_anchor: e.target.value })} /></Field></div>
+          <div className="lg:col-span-2"><Field label="High-score behavior"><textarea required maxLength={500} rows={2} className={inputClass} value={item.high_anchor} onChange={(e) => category(index, { high_anchor: e.target.value })} /></Field></div>
+        </fieldset>)}
+      </div></section>
+      {editable && <button disabled={busy} className={primaryClass}><Save className="h-4 w-4" />Save rubric and context</button>}
+    </form>}
+    {tab === "team" && <div className="space-y-8">
+      {editable && <form onSubmit={invite} className="grid items-end gap-4 sm:grid-cols-[1fr_180px_auto]">
+        <Field label="Teammate email"><input type="email" required className={inputClass} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} /></Field>
+        <Field label="Access"><select className={inputClass} value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}><option value="rep">Rep: own calls</option><option value="manager">Manager: team access</option></select></Field>
+        <button disabled={busy} className={primaryClass}><UserPlus className="h-4 w-4" />Create invitation</button>
+      </form>}
+      {inviteLink && <div className="flex flex-wrap items-center gap-3 rounded-md border border-[#dfe4ff] bg-white p-4"><input readOnly aria-label="Invitation link" className={inputClass + " min-w-0 flex-1"} value={inviteLink} />
+        <button className={secondaryClass} onClick={() => navigator.clipboard.writeText(inviteLink).then(() => setNotice("Invitation link copied.")).catch(() => setError("Select the invitation link to copy it manually."))}><Copy className="h-4 w-4" />Copy</button></div>}
+      <section><h2 className="text-lg font-bold">Team members</h2>
+        <div className="mt-4 divide-y divide-[#dfe4ff]">{account.users.map((member) => <div key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div><p className="font-semibold">{member.name || member.email}</p><p className="mt-1 text-xs text-[#5a5886]">{member.email} · {member.active ? "Active" : "Suspended"}</p></div>
+          {editable && member.id !== user?.id ? <div className="flex items-center gap-3"><select aria-label={"Role for " + member.email} className={inputClass + " w-auto"} disabled={busy} value={member.role} onChange={(e) => member.active && updateMember(member.id, member.active, e.target.value)}><option value="rep">Rep</option><option value="manager">Manager</option></select>
+            <button disabled={busy} onClick={() => updateMember(member.id, !member.active, member.role)} className={secondaryClass}>{member.active ? "Suspend" : "Restore"}</button></div> : <span className="text-sm capitalize text-[#5a5886]">{member.role}{member.id === user?.id ? " · You" : ""}</span>}
+        </div>)}</div>
+      </section>
+      {editable && invites.length > 0 && <section><h2 className="text-lg font-bold">Pending invitations</h2>
+        {invites.map((item) => <div key={item.id} className="mt-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#dfe4ff] pb-3"><p className="text-sm">{item.email} · {item.role} · expires {new Date(item.expires_at).toLocaleDateString()}</p>
+          <button className={secondaryClass} disabled={busy} onClick={() => revoke(item.id)}>Revoke</button></div>)}</section>}
+    </div>}
+    {tab === "privacy" && <div className="space-y-8">
+      <form onSubmit={save} className="max-w-2xl space-y-5"><h2 className="text-lg font-bold">Conversation data policy</h2>
+        <fieldset disabled={!editable || busy} className="space-y-5">
+          <Field label="Delete conversations after this many days"><input required type="number" min={1} max={3650} className={inputClass} value={account.trust_controls.data_retention_days} onChange={(e) => setAccount({ ...account, trust_controls: { ...account.trust_controls, data_retention_days: Number(e.target.value) } })} /></Field>
+          <label className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-4 w-4" checked={account.trust_controls.recording_consent_required} onChange={(e) => setAccount({ ...account, trust_controls: { ...account.trust_controls, recording_consent_required: e.target.checked } })} /><span className="text-sm leading-6">Require consent confirmation before uploads and analysis.</span></label>
+          <label className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-4 w-4" checked={account.trust_controls.pii_redaction_enabled} onChange={(e) => setAccount({ ...account, trust_controls: { ...account.trust_controls, pii_redaction_enabled: e.target.checked } })} /><span className="text-sm leading-6">Redact email addresses, phone numbers, and long account-like numbers from stored transcripts and coaching.</span></label>
+          <p className="text-xs leading-6 text-[#5a5886]">Redaction also applies to existing text and cannot restore removed details. Names and every other type of personal information are not automatically detected. Audio is removed after redacted transcription finishes. Retention deletion includes audio and linked coaching.</p>
+        </fieldset>
+        {editable && <button disabled={busy} className={primaryClass}><Save className="h-4 w-4" />Save data policy</button>}
+      </form>
+      <form onSubmit={password} className="max-w-2xl space-y-4 border-t border-[#dfe4ff] pt-6"><h2 className="text-lg font-bold">Change your password</h2>
+        <Field label="Current password"><input type="password" required maxLength={128} autoComplete="current-password" className={inputClass} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} /></Field>
+        <Field label="New password"><input type="password" required minLength={12} maxLength={128} autoComplete="new-password" className={inputClass} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></Field>
+        <button disabled={busy} className={secondaryClass}>Update password</button>
+      </form>
+      {editable && <section className="border-t border-[#dfe4ff] pt-6"><h2 className="text-lg font-bold">Recent activity</h2>
+        <div className="mt-3 divide-y divide-[#dfe4ff]">{events.map((event) => <div key={event.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span>{event.action.replaceAll("_", " ")}</span><span className="text-xs text-[#5a5886]">{new Date(event.created_at).toLocaleString()}</span></div>)}</div>
+      </section>}
+    </div>}
+  </div>;
 }

@@ -21,6 +21,9 @@ class Organization(Base):
     data_retention_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
     recording_consent_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     pii_redaction_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    framework_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    processing_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    offer_context: Mapped[dict[str, Any]] = mapped_column(json_document_type(), nullable=True, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

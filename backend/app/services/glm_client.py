@@ -8,6 +8,8 @@ class GLMClient:
         self.client = OpenAI(
             api_key=settings.zai_api_key,
             base_url=settings.zai_base_url,
+            timeout=settings.analysis_timeout_seconds,
+            max_retries=0,
         )
         self.model = settings.zai_model
 
@@ -19,6 +21,6 @@ class GLMClient:
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.3,
-            max_tokens=4000,
+            max_tokens=6000,
         )
         return response.choices[0].message.content or ""

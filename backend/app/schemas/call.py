@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.call_status import CallStatus
 from app.schemas.call_analysis import AnalysisOut
@@ -8,14 +8,16 @@ from app.schemas.call_analysis import AnalysisOut
 
 class CallCreate(BaseModel):
     rep_id: str
-    organization_id: str = "default"
-    lead_name: str | None = None
-    lead_source: str | None = None
-    call_type: str | None = None
-    outcome: str | None = None
-    transcript: str | None = None
+    organization_id: str | None = None
+    lead_name: str | None = Field(default=None, max_length=200)
+    lead_source: str | None = Field(default=None, max_length=200)
+    call_type: str | None = Field(default=None, max_length=100)
+    outcome: str | None = Field(default=None, max_length=1000)
+    transcript: str | None = Field(default=None, max_length=80000)
     consent_confirmed: bool = False
-    consent_notes: str | None = None
+    consent_notes: str | None = Field(default=None, max_length=2000)
+
+    model_config = {"extra": "forbid"}
 
 
 class CallOut(BaseModel):
@@ -27,6 +29,8 @@ class CallOut(BaseModel):
     call_type: str | None = None
     outcome: str | None = None
     transcript: str | None = None
+    transcript_segments: list[dict] | None = None
+    is_sample: bool = False
     consent_confirmed: bool = False
     consent_notes: str | None = None
     audio_s3_key: str | None = None

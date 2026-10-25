@@ -1,145 +1,107 @@
 import json
 import logging
-from typing import Any
+import math
 
-from app.config import settings
 from app.coaching_framework import normalize_coaching_framework
-from app.prompts.sales_call_analysis import build_analysis_prompt
+from app.config import settings
+from app.prompts.grounded_analysis import build_analysis_prompt
+from app.sample_call import SAMPLE_SCORES
 from app.schemas.call_analysis import AIAnalysisResult
 from app.services.glm_client import GLMClient
+from app.services.transcript import format_timestamp, parse_transcript
 
 logger = logging.getLogger(__name__)
 
 
+class AnalysisError(Exception):
+    pass
+
+
+def verify_result(result: AIAnalysisResult, segments: list[dict], framework: dict):
+    weights = {category["key"]: category["weight"] for category in framework["score_categories"]}
+    if set(result.scores) != set(weights):
+        raise AnalysisError("The scorecard did not follow the saved rubric. Retry analysis.")
+    by_id = {segment["id"]: segment for segment in segments}
+    supported = set()
+    for item in result.evidence:
+        segment = by_id.get(item.segment_id)
+        if not segment or not item.quote.strip() or item.quote not in segment["text"] or item.score_area not in weights:
+            raise AnalysisError("A coaching excerpt could not be verified against the transcript. Retry analysis.")
+        item.speaker = segment["speaker"]
+        item.timestamp = format_timestamp(segment.get("start_seconds"))
+        supported.add(item.score_area)
+    total = 0.0
+    observed_weight = 0
+    for key, value in result.scores.items():
+        if not result.score_reasons.get(key, "").strip():
+            raise AnalysisError("A scoring rationale is missing. Retry analysis.")
+        if value is None:
+            continue
+        if not math.isfinite(value) or not 0 <= value <= 100 or key not in supported:
+            raise AnalysisError("A score is invalid or lacks transcript evidence. Retry analysis.")
+        total += weights[key] * value
+        observed_weight += weights[key]
+    for objection in result.objections:
+        if objection.customer_quote and not any(objection.customer_quote in segment["text"] for segment in segments):
+            raise AnalysisError("An objection quote could not be verified. Retry analysis.")
+    if not result.summary.strip():
+        raise AnalysisError("The scorecard is incomplete. Retry analysis.")
+    result.overall_score = round(total / observed_weight, 1) if observed_weight else None
+    result.sales_psychology.close_probability = ""
+    return round(observed_weight / sum(weights.values()) * 100, 1)
+
+
 class SalesAnalyzer:
-    def __init__(self):
-        self.glm = GLMClient() if not settings.mock_ai else None
+    def analyze(self, transcript: str, coaching_framework: dict | None = None,
+                segments: list[dict] | None = None, context: dict | None = None, is_sample: bool = False):
+        framework = normalize_coaching_framework(coaching_framework)
+        segments = segments or parse_transcript(transcript)
+        if is_sample:
+            result = self._sample_result(framework)
+        else:
+            if settings.mock_ai or not settings.zai_api_key:
+                raise AnalysisError("Real call scoring is unavailable. Configure the model provider or use the labeled sample.")
+            try:
+                system, user = build_analysis_prompt(segments, framework, context or {})
+                result = self._parse(GLMClient().chat(system, user))
+            except Exception as exc:
+                logger.warning("Analysis provider failed (%s)", type(exc).__name__)
+                raise AnalysisError("AI scoring failed. Your call was saved; retry analysis.") from exc
+        verify_result(result, segments, framework)
+        return result
 
-    def analyze(self, transcript: str, coaching_framework: dict[str, Any] | None = None) -> AIAnalysisResult:
-        if settings.mock_ai or not settings.zai_api_key:
-            return self._mock_result()
-
-        framework = json.dumps(normalize_coaching_framework(coaching_framework), indent=2)
-        system, user = build_analysis_prompt(transcript, framework)
-        try:
-            raw = self.glm.chat(system, user)
-            return self._parse(raw)
-        except Exception as e:
-            logger.warning(f"GLM API call failed, falling back to mock: {e}")
-            return self._mock_result()
-
-    def _parse(self, raw: str) -> AIAnalysisResult:
+    def _parse(self, raw: str):
         cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1]
-            cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-        data = json.loads(cleaned)
-        return AIAnalysisResult(**data)
+        if cleaned.startswith("\u0060\u0060\u0060"):
+            cleaned = cleaned.split("\n", 1)[-1].rsplit("\u0060\u0060\u0060", 1)[0]
+        return AIAnalysisResult.model_validate(json.loads(cleaned.strip()))
 
-    def _mock_result(self) -> AIAnalysisResult:
+    def _sample_result(self, framework):
+        scores = {}
+        reasons = {}
+        evidence = []
+        for category in framework["score_categories"]:
+            key = category["key"]
+            annotated = SAMPLE_SCORES.get(key)
+            scores[key] = annotated[0] if annotated else None
+            reasons[key] = annotated[3] if annotated else "This illustrative sample has no annotation for this category."
+            if annotated:
+                evidence.append({"score_area": key, "segment_id": annotated[1], "quote": annotated[2],
+                                 "category": "strength" if annotated[0] >= 65 else "risk",
+                                 "coaching_point": annotated[3]})
         return AIAnalysisResult(
-            overall_score=72,
-            summary="The rep built good rapport but missed key discovery questions. Objections around pricing were handled adequately but could be stronger.",
-            scores={"rapport": 80, "discovery": 55, "objection_handling": 65, "closing": 70, "follow_up": 90},
-            strengths=["Good opening rapport", "Asked about customer's timeline", "Offered a relevant case study"],
-            missed_opportunities=["Did not qualify budget early", "Missed opportunity to handle price objection with value narrative", "Could have asked for referral"],
-            objections=[
-                {
-                    "type": "pricing",
-                    "customer_quote": "That's way more than I was expecting.",
-                    "rep_response_quality": "average",
-                    "better_response": "I understand the sticker shock. Before we look at numbers, can I ask what solving this would be worth if it fixed the rollout delays you mentioned?"
-                }
-            ],
-            buying_signals=[
-                {
-                    "signal": "Customer asked about implementation timeline",
-                    "strength": "strong",
-                    "why_it_matters": "Asking about next steps indicates purchase intent"
-                }
-            ],
-            manager_notes=["Focus on discovery questions early", "Practice value-based pricing rebuttal"],
-            evidence=[
-                {
-                    "category": "objection",
-                    "speaker": "buyer",
-                    "quote": "That's way more than I was expecting.",
-                    "timestamp": "",
-                    "score_area": "money_readiness",
-                    "coaching_point": "The price concern appeared before the buyer connected the problem to measurable business impact.",
-                },
-                {
-                    "category": "missed_moment",
-                    "speaker": "rep",
-                    "quote": "We can be flexible on rollout and pricing.",
-                    "timestamp": "",
-                    "score_area": "resistance_management",
-                    "coaching_point": "The rep moved to accommodation before diagnosing whether the concern was budget, trust, timing, or comparison.",
-                },
-                {
-                    "category": "buying_signal",
-                    "speaker": "buyer",
-                    "quote": "How quickly could implementation happen?",
-                    "timestamp": "",
-                    "score_area": "urgency",
-                    "coaching_point": "Implementation timing is a signal of intent, but the manager should coach the rep to connect timing to consequences.",
-                },
-            ],
-            coaching_drill="Role-play the first 5 minutes with a buyer who leads with pricing concerns. The rep must ask three problem and consequence questions before presenting.",
-            follow_up_sms="Hi [Name], thanks for your time today. I'll send over the proposal by tomorrow. Let me know if any questions come up in the meantime. - [Rep Name]",
-            follow_up_email={
-                "subject": "Following up on our conversation",
-                "body": "Hi [Name],\n\nThanks again for the great conversation today. As promised, here's a summary of what we discussed:\n\n[Summary]\n\nI'm confident we can deliver the results you're looking for. Let me know if you'd like to schedule a follow-up call.\n\nBest,\n[Rep Name]"
-            },
-            sales_psychology={
-                "trust_level": "medium",
-                "pain_depth": "moderate",
-                "urgency_level": "medium",
-                "decision_clarity": "partial",
-                "money_readiness": "medium",
-                "resistance_created": "medium",
-                "close_probability": "medium",
-                "emotional_driver": "The buyer wants confidence that implementation will be fast enough to justify the investment.",
-                "primary_blocker": "Pricing concern was raised before the buyer fully connected cost to business impact.",
-                "scores": {
-                    "trust_and_safety": 78,
-                    "problem_clarity": 62,
-                    "emotional_depth": 54,
-                    "consequence_awareness": 48,
-                    "decision_clarity": 58,
-                    "money_readiness": 60,
-                    "urgency": 64,
-                    "resistance_management": 57,
-                },
-                "better_questions": [
-                    {
-                        "category": "problem",
-                        "missed_moment": "The buyer mentioned rollout timing, but the rep moved quickly toward the proposal.",
-                        "suggested_question": "What happens on your side if this rollout is still unresolved 90 days from now?",
-                        "why_it_works": "It helps the buyer verbalize consequence instead of forcing the rep to argue for urgency.",
-                    },
-                    {
-                        "category": "money",
-                        "missed_moment": "The price objection was met with ROI explanation before the buyer's concern was clarified.",
-                        "suggested_question": "When you say it is more than expected, is the concern cash flow, confidence in the outcome, or comparing us to another option?",
-                        "why_it_works": "It separates financial ability from trust and comparison concerns, which need different responses.",
-                    },
-                    {
-                        "category": "decision",
-                        "missed_moment": "The rep did not confirm who else influences the final decision.",
-                        "suggested_question": "Besides you, who would need to feel comfortable before moving forward?",
-                        "why_it_works": "It surfaces stakeholder risk before it becomes a late-stage objection.",
-                    },
-                ],
-                "objection_psychology": [
-                    {
-                        "objection_type": "pricing",
-                        "buyer_language": "That's way more than I was expecting.",
-                        "underlying_concern": "The buyer has not fully connected the investment to the cost of staying with the current problem.",
-                        "recommended_question": "What were you expecting to invest, and what outcome did you have attached to that number?",
-                    }
-                ],
-                "next_call_strategy": "Slow down discovery, deepen consequence questions, and clarify decision stakeholders before presenting investment or ROI.",
-            },
+            summary="Illustrative sample: discovery exposes a concrete business cost. The rep offers pricing flexibility before clarifying the concern and leaves the approval path vague.",
+            scores=scores, score_reasons=reasons, evidence=evidence,
+            strengths=["Open discovery question", "Consequence question uncovered time lost"],
+            missed_opportunities=["Clarify the price concern before discussing flexibility", "Agree on the partner's approval criteria and next step"],
+            manager_notes=["Rehearse two clarifying questions before addressing a pricing objection"],
+            coaching_drill="Replay the price objection. Ask what is behind the concern, then clarify the decision criteria before offering flexibility.",
+            follow_up_sms="Thanks for discussing onboarding. You mentioned losing ten hours per customer. What would your partner need to evaluate a change?",
+            follow_up_email={"subject": "Your onboarding goals and approval process",
+                             "body": "You described a six-week onboarding process and ten hours lost per customer. What would your partner need to evaluate an improvement? Let's agree on a next step after clarifying that."},
+            sales_psychology={"primary_blocker": "Approval criteria and the reason for the price concern are unresolved.",
+                              "next_call_strategy": "Clarify the investment concern and partner's decision criteria.",
+                              "better_questions": [{"category": "money", "missed_moment": "The buyer raised price before the rep clarified the concern.",
+                                                    "suggested_question": "What concerns you most about the investment?",
+                                                    "why_it_works": "It invites the buyer to identify the concern instead of assuming it is price alone."}]},
         )

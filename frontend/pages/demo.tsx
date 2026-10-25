@@ -129,15 +129,15 @@ const DemoPage: DemoPageType = () => {
                   See one sales call become a coaching plan.
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg leading-8 text-[#312f61]">
-                  This walkthrough shows the product story without dropping into the admin workspace too early: the call
-                  moment, the buyer psychology signal, and the manager action that improves the next conversation.
+                  Review a sample call moment, the supporting excerpts, and a focused coaching action.
+                  Then create a private workspace to try an illustrative scorecard or add your own authorized conversation.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href="#walkthrough"
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#5c67ff] px-6 text-sm font-bold text-white shadow-[0_16px_35px_rgba(92,103,255,0.28)] hover:bg-[#4752f3]"
                   >
-                    Watch walkthrough
+                    Review the example
                     <PlayCircle className="h-4 w-4" aria-hidden="true" />
                   </a>
                   <Link
@@ -286,11 +286,11 @@ const DemoPage: DemoPageType = () => {
               <div className="max-w-3xl">
                 <p className="text-sm font-bold uppercase text-[#1684ff]">Manager-ready output</p>
                 <h2 className="mt-3 text-3xl font-extrabold leading-tight text-[#090044] sm:text-4xl">
-                  The demo explains the product before the workspace asks for data.
+                  A specific coaching action for the next conversation.
                 </h2>
                 <p className="mt-4 text-base leading-7 text-[#4c4a7d]">
-                  Buyers can understand the value first, then open the full workspace when they are ready to inspect
-                  the working call intake, scorecards, and practice lab.
+                  Review the evidence, choose one skill to practice, and compare a later call using the same rubric.
+                  This page uses illustrative examples and does not claim measured revenue improvement.
                 </p>
               </div>
 
@@ -317,15 +317,15 @@ const DemoPage: DemoPageType = () => {
                 <p className="text-sm font-bold uppercase text-[#9fd3ff]">Ready for the product workspace</p>
                 <h2 className="mt-2 text-3xl font-extrabold">Open the app to add a real sales conversation.</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-[#d7dcff]">
-                  The workspace now uses the same brand colors and typography so the transition from sales page to demo
-                  to product review feels intentional.
+                  Start with a synthetic sample or add a conversation you are authorized to process.
+                  Real AI results are checked against the source transcript before they appear in a scorecard.
                 </p>
               </div>
               <Link
-                href="/calls/new"
+                href="/signup"
                 className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#090044] hover:bg-[#eef1ff]"
               >
-                Open full app workspace
+                Create your workspace
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>

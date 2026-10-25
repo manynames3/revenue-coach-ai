@@ -1,56 +1,51 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import Base, engine
-from app.routes import account, calls, dashboard, reps
+from app.models.user import User
+from app.models.organization import Organization
+from app.models.workspace import AnalysisJob
+from app.routes import account, auth, calls, coaching, dashboard, onboarding, pilots, reps
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    from app.models import call, call_analysis, organization, rep, user  # noqa: F401
-    from app.models.organization import Organization
-    from app.models.user import User
-
-    Base.metadata.create_all(bind=engine)
-    # Create default org if not exists
-    with Session(engine) as session:
-        default_org = session.query(Organization).filter(Organization.id == "default").first()
-        if not default_org:
-            session.add(Organization(id="default", name="Default Org"))
-            session.commit()
-        default_user = session.query(User).filter(User.email == "demo-manager@revenuecoach.ai").first()
-        if not default_user:
-            session.add(
-                User(
-                    email="demo-manager@revenuecoach.ai",
-                    password_hash="demo-disabled",
-                    organization_id="default",
-                )
-            )
-            session.commit()
+async def lifespan(app):
+    from app import models  # noqa: F401
+    if settings.auto_create_schema:
+        Base.metadata.create_all(bind=engine)
+    if settings.session_cookie_samesite not in {"lax", "strict", "none"}:
+        raise RuntimeError("Invalid session cookie policy")
+    if settings.session_cookie_samesite == "none" and not settings.session_cookie_secure:
+        raise RuntimeError("Cross-site sessions require Secure cookies")
+    if settings.frontend_url.startswith("https://") and not settings.session_cookie_secure:
+        raise RuntimeError("HTTPS deployments require Secure session cookies")
+    if "*" in settings.cors_origins:
+        raise RuntimeError("Configure explicit allowed origins")
     yield
 
 
 app = FastAPI(title="RevenueCoach AI", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True,
+                   allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+                   allow_headers=["Content-Type", "X-CSRF-Token"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-app.include_router(reps.router)
-app.include_router(calls.router)
-app.include_router(dashboard.router)
-app.include_router(account.router)
+@app.middleware("http")
+async def private_responses(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+for route in (auth, reps, calls, dashboard, account, coaching, onboarding, pilots):
+    app.include_router(route.router)
 
 
 @app.get("/health")
@@ -60,20 +55,14 @@ def health():
 
 @app.get("/ready")
 def readiness():
-    checks = {
-        "database": False,
-        "ai_configured": bool(settings.zai_api_key) or settings.mock_ai,
-        "aws_bucket_configured": bool(settings.aws_s3_bucket),
-    }
-
     try:
         with Session(engine) as session:
-            session.execute(text("select 1"))
-        checks["database"] = True
-    except Exception as exc:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "not_ready", "checks": checks, "error": str(exc)},
-        )
-
-    return {"status": "ready", "checks": checks}
+            session.query(User.id, User.active).limit(1).all()
+            session.query(AnalysisJob.id).limit(1).all()
+            session.query(Organization.id, Organization.processing_enabled).limit(1).all()
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "not_ready", "checks": {"database": False}})
+    return {"status": "ready", "checks": {"database": True,
+            "ai_configured": bool(settings.zai_api_key) and not settings.mock_ai,
+            "aws_bucket_configured": bool(settings.aws_s3_bucket)},
+            "sample_available": True}

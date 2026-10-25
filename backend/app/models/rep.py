@@ -15,6 +15,7 @@ class Rep(Base):
     email: Mapped[str] = mapped_column(String, nullable=True)
     phone: Mapped[str] = mapped_column(String, nullable=True)
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

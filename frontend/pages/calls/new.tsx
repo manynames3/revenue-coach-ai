@@ -1,3 +1,4 @@
+import { api, apiFetch, callHref, jsonBody, uploadAudio } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import {
@@ -13,7 +14,6 @@ import {
 } from "lucide-react";
 import type { Account, Rep, UploadUrlResponse } from "../../types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const steps = [
   { label: "Rep", icon: UserRound },
@@ -46,7 +46,7 @@ export default function NewCall() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/reps`)
+    apiFetch("/reps")
       .then((r) => {
         if (!r.ok) throw new Error("Unable to load reps.");
         return r.json();
@@ -65,7 +65,7 @@ export default function NewCall() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/account`)
+    apiFetch("/account")
       .then((r) => {
         if (!r.ok) throw new Error("Unable to load account settings.");
         return r.json();
@@ -102,59 +102,23 @@ export default function NewCall() {
 
   const createCallWithText = async () => {
     setStatus("creating");
-    const res = await fetch(`${API_URL}/calls`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) throw new Error("Call could not be created.");
-    const call = await res.json();
-
+    const call = await api<{ id: string }>("/calls", jsonBody(form));
     setStatus("analyzing");
-    const analysisRes = await fetch(`${API_URL}/calls/${call.id}/analyze`, { method: "POST" });
-    if (!analysisRes.ok) throw new Error("Call was saved, but analysis failed.");
-
+    await api("/calls/" + call.id + "/analyze", { method: "POST" }).catch(() => undefined);
     setStatus("completed");
-    router.push(`/calls/${call.id}`);
+    await router.push(callHref(call.id));
   };
 
   const createCallWithAudio = async () => {
     if (!file) return;
-
-    setStatus("uploading");
-    const urlRes = await fetch(
-      `${API_URL}/calls/upload-url?file_name=${encodeURIComponent(file.name)}&file_type=${encodeURIComponent(file.type)}`,
-      { method: "POST" }
-    );
-    if (!urlRes.ok) throw new Error("Audio upload URL could not be created.");
-    const presigned: UploadUrlResponse = await urlRes.json();
-
-    const formData = new FormData();
-    Object.entries(presigned.fields).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-    formData.append("file", file);
-
-    const uploadRes = await fetch(presigned.url, { method: "POST", body: formData });
-    if (!uploadRes.ok) throw new Error("Audio upload failed.");
-
     setStatus("creating");
-    const callRes = await fetch(`${API_URL}/calls`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, transcript: "" }),
-    });
-    if (!callRes.ok) throw new Error("Call record could not be created.");
-    const call = await callRes.json();
-
-    setStatus("transcribing");
-    const transcribeRes = await fetch(`${API_URL}/calls/${call.id}/transcribe?s3_key=${encodeURIComponent(presigned.key)}`, {
-      method: "POST",
-    });
-    if (!transcribeRes.ok) throw new Error("Transcription could not be started.");
-
-    setStatus("completed");
-    router.push(`/calls/${call.id}`);
+    const call = await api<{ id: string }>("/calls", jsonBody({ ...form, transcript: "" }));
+    setStatus("uploading");
+    try { await uploadAudio(call.id, file); }
+    finally {
+      setStatus("completed");
+      await router.push(callHref(call.id));
+    }
   };
 
   const handleSubmit = async () => {
@@ -231,7 +195,7 @@ export default function NewCall() {
             <div className="flex items-start gap-2">
               <Lock className="mt-0.5 h-4 w-4 text-[#5c67ff]" aria-hidden="true" />
               <p className="text-xs leading-5 text-[#312f61]">
-                Audio files upload directly to S3. The API stores transcript and scorecard data for review.
+                Only upload conversations you have permission to process. Your team controls retention and contact-detail redaction.
               </p>
             </div>
           </div>
